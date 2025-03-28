@@ -1,8 +1,28 @@
 import axios from 'axios';
 
+// Configuração do Axios
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// Interceptor para adicionar token
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+// Configurações TMDB
 const API_KEY = '03129dc562c7c51794b4fd34d2ca274b';
 const BASE_URL = 'https://api.themoviedb.org/3';
-const BACKEND_URL = 'http://localhost:5000/api';
 
 // Funções TMDB
 export const getTrendingMovies = async () => {
@@ -52,31 +72,131 @@ export const searchMovies = async (query, page = 1) => {
   return response.data;
 };
 
+// Funções de Autenticação
+export const login = async (credentials) => {
+  try {
+    const response = await api.post('/auth/login', credentials);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao fazer login');
+  }
+};
+
 export const register = async (userData) => {
   try {
-    const response = await axios.post(`${BACKEND_URL}/users/register`, userData);
+    const response = await api.post('/auth/register', userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.error || 'Erro no registro');
   }
 };
 
+export const logout = async () => {
+  try {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao fazer logout');
+  }
+};
+
+// Funções de Usuário
+export const getUserProfile = async (userId) => {
+  try {
+    const response = await api.get(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao obter perfil');
+  }
+};
+
 export const updateUserProfile = async (userId, data) => {
-  const response = await axios.put(`${BACKEND_URL}/users/${userId}`, data);
-  return response.data;
+  try {
+    const response = await api.put(`/users/${userId}`, data);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao atualizar perfil');
+  }
 };
 
 export const changePassword = async (userId, data) => {
-  const response = await axios.put(`${BACKEND_URL}/users/${userId}/password`, data);
-  return response.data;
+  try {
+    const response = await api.put(`/users/${userId}/password`, data);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao alterar senha');
+  }
 };
 
+// Funções de Watchlist
 export const getWatchlist = async (userId) => {
-  const response = await axios.get(`${BACKEND_URL}/users/${userId}/watchlist`);
-  return response.data;
+  try {
+    const response = await api.get(`/users/${userId}/watchlist`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao obter watchlist');
+  }
+};
+
+export const addToWatchlist = async (userId, movieData) => {
+  try {
+    const response = await api.post(`/users/${userId}/watchlist`, movieData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao adicionar à watchlist');
+  }
 };
 
 export const removeFromWatchlist = async (userId, movieId) => {
-  const response = await axios.delete(`${BACKEND_URL}/users/${userId}/watchlist/${movieId}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/users/${userId}/watchlist/${movieId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao remover da watchlist');
+  }
+};
+
+// Funções de Upload
+export const uploadAvatar = async (userId, file) => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await api.put(`/users/${userId}/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.error || 'Erro ao enviar avatar');
+  }
+};
+
+// Funções de Estatísticas
+export const getUserStats = async (userId) => {
+  try {
+    const response = await api.get(`/users/${userId}/stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    return {
+      moviesWatched: 0,
+      hoursWatched: 0,
+      favoriteGenre: 'Nenhum ainda',
+      reviewsWritten: 0,
+      listsCreated: 0
+    };
+  }
+};
+
+export const getUserActivity = async (userId) => {
+  try {
+    const response = await api.get(`/users/${userId}/activity`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user activity:', error);
+    return [];
+  }
 };

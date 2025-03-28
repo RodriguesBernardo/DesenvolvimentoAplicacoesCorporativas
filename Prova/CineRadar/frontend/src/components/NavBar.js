@@ -1,28 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar, Nav, Container, Form, Button, Dropdown, Badge } from 'react-bootstrap';
+import { Navbar, Nav, Container, Form, Button, Dropdown, Badge, Spinner } from 'react-bootstrap';
 import { Search, Film, Bookmark, Person, BoxArrowRight } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-// import logo from '../assets/logo.png'; // Adicione um logo na pasta assets
+import { useAuth } from '../contexts/AuthContext';
+import _ from 'lodash'; // Importando lodash para throttle/debounce
 
 const CineNavbar = () => {
-  const { user, logout } = useAuth();
+  const { currentUser, logout, loading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
+  // Efeito de scroll com throttle para melhor performance
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = _.throttle(() => {
       setScrolled(window.scrollY > 10);
-    };
+    }, 100);
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = (e) => {
+  // Busca com debounce para evitar múltiplas requisições
+  const handleSearch = _.debounce((query) => {
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+    }
+  }, 300);
+
+  const handleSearchSubmit = (e) => {
     e.preventDefault();
-    navigate(`/search?q=${searchQuery}`);
+    handleSearch(searchQuery);
   };
+
+  // Mostrar spinner durante o carregamento
+  if (loading) {
+    return (
+      <Navbar bg="dark" variant="dark" fixed="top">
+        <Container>
+          <Navbar.Brand as={Link} to="/">
+            <span className="text-gradient">CineRadar</span>
+          </Navbar.Brand>
+          <Spinner animation="border" size="sm" variant="light" />
+        </Container>
+      </Navbar>
+    );
+  }
 
   return (
     <>
@@ -30,7 +53,7 @@ const CineNavbar = () => {
         expand="lg" 
         fixed="top" 
         className={`navbar-custom ${scrolled ? 'scrolled' : ''}`}
-        style={{ height: '70px' }}
+        style={{ height: '70px', zIndex: 1030 }}
       >
         <Container>
           <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
@@ -53,43 +76,48 @@ const CineNavbar = () => {
               </Nav.Link>
               <Nav.Link as={Link} to="/watchlist" className="text-white">
                 <Bookmark className="me-1" /> Minha Lista
-                {user?.watchlistCount > 0 && (
+                {currentUser?.watchlistCount > 0 && (
                   <Badge pill bg="danger" className="ms-1">
-                    {user.watchlistCount}
+                    {currentUser.watchlistCount}
                   </Badge>
                 )}
               </Nav.Link>
             </Nav>
 
-            <Form className="d-flex mx-3" onSubmit={handleSearch}>
+            <Form className="d-flex mx-3" onSubmit={handleSearchSubmit}>
               <Form.Control
                 type="search"
                 placeholder="Buscar filmes..."
                 className="me-2"
                 aria-label="Search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  handleSearch(e.target.value);
+                }}
               />
               <Button variant="outline-light" type="submit">
                 <Search />
               </Button>
             </Form>
 
-            {user ? (
+            {currentUser ? (
               <Dropdown align="end">
-                <Dropdown.Toggle variant="dark" id="dropdown-user">
-                  <Person className="me-1" /> {user.name}
+                <Dropdown.Toggle variant="dark" id="dropdown-user" className="d-flex align-items-center">
+                  <Person className="me-1" /> {currentUser.name}
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="dropdown-menu-dark">
-                  <Dropdown.Item as={Link} to="/profile">
-                    Meu Perfil
+                  <Dropdown.Item as={Link} to="/profile" className="d-flex align-items-center">
+                    <Person className="me-2" /> Meu Perfil
                   </Dropdown.Item>
-                  <Dropdown.Item as={Link} to="/settings">
-                    Configurações
-                  </Dropdown.Item>
+                  {currentUser.isAdmin && (
+                    <Dropdown.Item as={Link} to="/admin">
+                      Painel Admin
+                    </Dropdown.Item>
+                  )}
                   <Dropdown.Divider />
-                  <Dropdown.Item onClick={logout}>
-                    <BoxArrowRight className="me-1" /> Sair
+                  <Dropdown.Item onClick={logout} className="text-danger">
+                    <BoxArrowRight className="me-2" /> Sair
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>

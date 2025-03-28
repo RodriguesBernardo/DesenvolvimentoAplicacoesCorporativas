@@ -10,4 +10,3 @@ export const useAuth = () => {
   return context;
 };
 
-// Não adicione export default aqui!
