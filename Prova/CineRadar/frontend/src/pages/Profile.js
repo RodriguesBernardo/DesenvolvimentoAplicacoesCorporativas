@@ -28,15 +28,16 @@ import {
   PencilFill,
   CheckCircleFill,
   ExclamationTriangleFill,
-  CameraFill
+  CameraFill,
+  Person
 } from 'react-bootstrap-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-
-// Definindo a constante API_BASE_URL localmente
+// Configuração da API - ajuste conforme necessário
 const API_BASE_URL = 'http://localhost:5000/api';
+
 
 const Profile = () => {
   const { currentUser: user, updateUser } = useAuth();
@@ -65,11 +66,11 @@ const Profile = () => {
   });
   const [achievements, setAchievements] = useState([]);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
 
-  // Carrega os dados iniciais
+  // Carrega os dados iniciais quando o usuário é definido
   useEffect(() => {
     if (user) {
       setFormData({
@@ -77,7 +78,7 @@ const Profile = () => {
         email: user.email || '',
         bio: user.bio || ''
       });
-      setAvatarPreview(user.avatar || 'https://via.placeholder.com/150');
+      setAvatarPreview(user.avatar || null);
       loadUserData();
     }
   }, [user]);
@@ -86,20 +87,43 @@ const Profile = () => {
     if (!user?.id) return;
     
     setLoading(true);
+    setError('');
+    
     try {
-      const [watchlistRes, statsRes, activityRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/users/${user.id}/watchlist`),
-        axios.get(`${API_BASE_URL}/users/${user.id}/stats`),
-        axios.get(`${API_BASE_URL}/users/${user.id}/activity`)
-      ]);
+      // Endpoints ajustados - verifique se existem no seu backend
+      const endpoints = [
+        `${API_BASE_URL}/users/${user.id}/watchlist`,
+        `${API_BASE_URL}/users/${user.id}/stats`,
+        `${API_BASE_URL}/users/${user.id}/activity`
+      ];
 
-      setWatchlist(watchlistRes.data.slice(0, 5));
-      setStats(statsRes.data);
-      setRecentActivity(activityRes.data.slice(0, 5));
-      setAchievements(calculateAchievements(statsRes.data));
+      const requests = endpoints.map(endpoint => 
+        axios.get(endpoint, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }).catch(err => {
+          console.warn(`Failed to load ${endpoint}:`, err);
+          return { data: null }; // Retorna null se a requisição falhar
+        })
+      );
+
+      const [watchlistRes, statsRes, activityRes] = await Promise.all(requests);
+
+      // Atualiza estados com fallbacks seguros
+      setWatchlist(watchlistRes.data?.slice(0, 5) || []);
+      setStats(statsRes.data || {
+        moviesWatched: 0,
+        hoursWatched: 0,
+        favoriteGenre: 'Nenhum ainda',
+        reviewsWritten: 0,
+        listsCreated: 0
+      });
+      setRecentActivity(activityRes.data?.slice(0, 5) || []);
+      setAchievements(calculateAchievements(statsRes.data || {}));
     } catch (err) {
-      setError('Erro ao carregar dados do usuário');
       console.error('Error loading user data:', err);
+      setError('Erro ao carregar dados. Algumas informações podem estar incompletas.');
     } finally {
       setLoading(false);
     }
@@ -108,6 +132,7 @@ const Profile = () => {
   const calculateAchievements = (userStats) => {
     const achievements = [];
     
+    // Conquistas baseadas em filmes assistidos
     if (userStats.moviesWatched >= 10) {
       achievements.push({
         title: 'Iniciante',
@@ -128,6 +153,7 @@ const Profile = () => {
       });
     }
     
+    // Conquistas baseadas em horas assistidas
     if (userStats.hoursWatched >= 24) {
       achievements.push({
         title: 'Maratonista',
@@ -138,6 +164,7 @@ const Profile = () => {
       });
     }
     
+    // Conquistas baseadas em reviews
     if (userStats.reviewsWritten >= 5) {
       achievements.push({
         title: 'Crítico',
@@ -148,6 +175,7 @@ const Profile = () => {
       });
     }
     
+    // Conquista para lista de favoritos
     if (userStats.listsCreated > 0) {
       achievements.push({
         title: 'Organizador',
@@ -237,12 +265,11 @@ const Profile = () => {
 
   const handleUploadAvatar = async () => {
     if (!selectedFile) {
-      return setError('Selecione uma imagem');
+      return setError('Selecione uma imagem válida');
     }
 
-    setError('');
-    setSuccess('');
     setLoading(true);
+    setError('');
 
     try {
       const formData = new FormData();
@@ -262,6 +289,7 @@ const Profile = () => {
       updateUser(response.data.user);
       setShowAvatarModal(false);
       setSuccess('Avatar atualizado com sucesso!');
+      setAvatarPreview(response.data.user.avatar);
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao atualizar avatar');
     } finally {
@@ -278,6 +306,28 @@ const Profile = () => {
       case 'WATCHLIST': return <CheckCircleFill className="text-success" />;
       default: return <ExclamationTriangleFill className="text-secondary" />;
     }
+  };
+
+  const renderAvatar = () => {
+    if (avatarPreview) {
+      return (
+        <Image 
+          src={avatarPreview} 
+          roundedCircle 
+          className="shadow"
+          style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+          alt="Avatar do usuário"
+        />
+      );
+    }
+    return (
+      <div 
+        className="d-flex align-items-center justify-content-center bg-secondary rounded-circle shadow"
+        style={{ width: '150px', height: '150px' }}
+      >
+        <Person style={{ fontSize: '4rem', color: 'white' }} />
+      </div>
+    );
   };
 
   if (!user) {
@@ -302,12 +352,7 @@ const Profile = () => {
           <Row className="align-items-center h-100">
             <Col xs={12} md={3} className="text-center mb-4 mb-md-0">
               <div className="position-relative d-inline-block">
-                <Image 
-                  src={avatarPreview} 
-                  roundedCircle 
-                  className="shadow"
-                  style={{ width: '150px', height: '150px', objectFit: 'cover' }}
-                />
+                {renderAvatar()}
                 <Button 
                   variant="outline-light" 
                   size="sm" 
@@ -633,14 +678,14 @@ const Profile = () => {
                         <Card className="h-100">
                           <Card.Img 
                             variant="top" 
-                            src={`https://image.tmdb.org/t/p/w200${item.poster_path}`} 
+                            src={item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Poster'}
                             alt={item.title}
                             style={{ objectFit: 'cover', height: '200px' }}
                           />
                           <Card.Body className="d-flex flex-column">
                             <Card.Title className="fs-6">{item.title}</Card.Title>
                             <div className="mt-auto">
-                              <Badge bg="secondary">{item.genre}</Badge>
+                              <Badge bg="secondary">{item.genre || 'Sem gênero'}</Badge>
                               <Button variant="outline-danger" size="sm" className="mt-2 w-100">
                                 Remover
                               </Button>
@@ -671,11 +716,21 @@ const Profile = () => {
         </Modal.Header>
         <Modal.Body>
           <div className="text-center mb-3">
-            <Image 
-              src={avatarPreview} 
-              roundedCircle 
-              style={{ width: '200px', height: '200px', objectFit: 'cover' }}
-            />
+            {avatarPreview ? (
+              <Image 
+                src={avatarPreview} 
+                roundedCircle 
+                style={{ width: '200px', height: '200px', objectFit: 'cover' }}
+                alt="Pré-visualização do avatar"
+              />
+            ) : (
+              <div 
+                className="d-flex align-items-center justify-content-center bg-secondary rounded-circle mx-auto"
+                style={{ width: '200px', height: '200px' }}
+              >
+                <Person style={{ fontSize: '5rem', color: 'white' }} />
+              </div>
+            )}
           </div>
           <Form.Group controlId="formFile" className="mb-3">
             <Form.Label>Selecione uma imagem</Form.Label>
