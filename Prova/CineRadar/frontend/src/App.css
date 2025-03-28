@@ -1,0 +1,41 @@
+/* Gradientes e efeitos */
+.bg-dark-gradient {
+  background: linear-gradient(to bottom, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+  transition: background 0.3s ease;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #ff4d4d, #f9cb28);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: bold;
+}
+
+/* Dropdown moderno */
+.dropdown-menu-dark {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.dropdown-item {
+  color: #eee;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #e50914;
+  color: white;
+}
+
+/* Navbar scroll */
+.navbar {
+  transition: all 0.3s ease;
+  padding: 15px 0;
+}
+
+.navbar.scrolled {
+  padding: 10px 0;
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
