@@ -87,7 +87,7 @@ const CineNavbar = () => {
             <Form className="d-flex mx-3" onSubmit={handleSearchSubmit}>
               <Form.Control
                 type="search"
-                placeholder="Buscar filmes..."
+                placeholder="Buscar"
                 className="me-2"
                 aria-label="Search"
                 value={searchQuery}

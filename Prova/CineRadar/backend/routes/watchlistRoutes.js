@@ -7,15 +7,45 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { movieId, title, posterPath } = req.body;
-    
+    const userId = req.user.id; // Corrigido para pegar do middleware
+
+    // 1. Verificar se o filme já está na watchlist
+    const [existing] = await db.query(
+      'SELECT * FROM watchlists WHERE user_id = ? AND movie_id = ?',
+      [userId, movieId]
+    );
+
+    if (existing.length > 0) {
+      return res.status(409).json({ 
+        error: 'Este filme já está na sua watchlist' 
+      });
+    }
+
+    // 2. Adicionar à watchlist
     await db.query(
-      'INSERT INTO watchlist (user_id, movie_id, title, poster_path) VALUES (?, ?, ?, ?)',
-      [req.userId, movieId, title, posterPath]
+      'INSERT INTO watchlists (user_id, movie_id, title, poster_path) VALUES (?, ?, ?, ?)',
+      [userId, movieId, title, posterPath]
     );
     
-    res.status(201).json({ message: 'Adicionado à watchlist' });
+    res.status(201).json({ 
+      success: true,
+      message: 'Filme adicionado à watchlist com sucesso'
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erro ao adicionar à watchlist:', err);
+    
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({ 
+        error: 'Tabela watchlists não existe',
+        suggestion: 'Execute o script de criação de tabelas'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Erro ao adicionar à watchlist',
+      details: err.message 
+    });
   }
 });
 
@@ -23,13 +53,29 @@ router.post('/', authMiddleware, async (req, res) => {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const [movies] = await db.query(
-      'SELECT movie_id, title, poster_path FROM watchlist WHERE user_id = ?',
-      [req.userId]
+      'SELECT movie_id as movieId, title, poster_path as posterPath FROM watchlists WHERE user_id = ?',
+      [req.user.id] // Corrigido para pegar do middleware
     );
     
-    res.json(movies);
+    res.json({
+      success: true,
+      count: movies.length,
+      data: movies
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Erro ao buscar watchlist:', err);
+    
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({ 
+        error: 'Tabela watchlists não existe',
+        suggestion: 'Execute o script de criação de tabelas'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Erro ao buscar watchlist',
+      details: err.message 
+    });
   }
 });
 

@@ -1,25 +1,75 @@
-CREATE DATABASE CineRadar;
-USE CineRadar;
-
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  avatar VARCHAR(255),
+  bio VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE preferences (
+CREATE TABLE genres (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  genres VARCHAR(255), 
-  platforms VARCHAR(255),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  name VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE watchlist (
+CREATE TABLE watchlists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  movie_id INT NOT NULL, -- ID do filme na TMDB
+  movie_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  poster_path VARCHAR(255),
+  added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE reviews (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  movie_id INT NOT NULL,
+  rating DECIMAL(2,1),
+  comment TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_activities (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  action VARCHAR(255),
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_preferences (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  preferred_genre_ids TEXT, -- pode armazenar IDs como "28,12,18"
+  language_preference VARCHAR(10),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_stats (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  movies_watched INT DEFAULT 0,
+  reviews_written INT DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE movies (
+  id INT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  poster_path VARCHAR(255),
+  release_date DATE,
+  vote_average DECIMAL(3,1),
+  overview TEXT
+);
+
+CREATE TABLE movie_genres (
+  movie_id INT NOT NULL,
+  genre_id INT NOT NULL,
+  PRIMARY KEY (movie_id, genre_id),
+  FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+  FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 );

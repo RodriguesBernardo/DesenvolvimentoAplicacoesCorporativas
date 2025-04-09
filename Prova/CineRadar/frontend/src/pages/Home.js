@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Carousel, Card, Button, Badge, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { StarFill, Clock, PlusCircle, PlayFill } from 'react-bootstrap-icons';
-import { getTrendingMovies, getMoviesByGenre, getMovieVideos } from '../services/api';
+import { API } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {
@@ -16,8 +16,8 @@ const Home = () => {
     const fetchData = async () => {
       try {
         const [trendingData, actionData] = await Promise.all([
-          getTrendingMovies(),
-          getMoviesByGenre(28) // Gênero Ação
+          API.getTrendingMovies(),  // Alterado para API.getTrendingMovies()
+          API.getMoviesByGenre(28)  // Alterado para API.getMoviesByGenre()
         ]);
         setTrending(trendingData);
         setActionMovies(actionData);
@@ -29,23 +29,6 @@ const Home = () => {
     };
     fetchData();
   }, []);
-
-  const handleTrailerClick = async (movieId, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      const videos = await getMovieVideos(movieId);
-      const trailer = videos.find(v => v.type === 'Trailer') || videos[0];
-      if (trailer) {
-        window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank');
-      } else {
-        alert('Trailer não disponível para este filme');
-      }
-    } catch (error) {
-      console.error("Error fetching trailer:", error);
-      alert('Erro ao buscar trailer');
-    }
-  };
 
   const handleAddToList = (e, movieId) => {
     e.preventDefault();
@@ -92,13 +75,6 @@ const Home = () => {
                   </div>
                   <p className="lead d-none d-md-block">{movie.overview?.substring(0, 150) || 'Descrição não disponível'}...</p>
                   <div className="d-flex flex-wrap gap-3">
-                    <Button 
-                      variant="danger" 
-                      size="lg"
-                      onClick={(e) => handleTrailerClick(movie.id, e)}
-                    >
-                      <PlayFill className="me-2" /> Assistir Trailer
-                    </Button>
                     {user && (
                       <Button 
                         variant="outline-light" 

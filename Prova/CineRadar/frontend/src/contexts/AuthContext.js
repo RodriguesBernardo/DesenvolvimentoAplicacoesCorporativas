@@ -28,31 +28,25 @@ export function AuthProvider({ children }) {
   // Login - agora usando useCallback para memoização
   const login = useCallback(async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', { // ← Corrigido para porta 5000
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Login falhou');
-      }
-
+  
+      if (!response.ok) throw new Error('Login falhou');
+  
       const userData = await response.json();
       
-      // Atualiza estado e localStorage atomicamente
       setCurrentUser(userData);
       localStorage.setItem('cineRadarUser', JSON.stringify(userData));
+      localStorage.setItem('userId', userData.id); // Armazena o ID separadamente
+      localStorage.setItem('token', userData.token); // Armazena o token
       
-      return { success: true, user: userData };
+      return { success: true };
     } catch (error) {
       console.error("Erro no login:", error);
-      return { 
-        success: false,
-        error: error.message,
-        status: error.response?.status // Adicione status HTTP se disponível
-      };
+      return { success: false, error: error.message };
     }
   }, []);
 
@@ -80,6 +74,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     isAuthenticated,
+    updateUser,
     loading
   };
 

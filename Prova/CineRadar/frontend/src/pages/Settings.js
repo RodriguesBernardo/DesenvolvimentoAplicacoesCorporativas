@@ -1,4 +1,4 @@
-import React from 'react';
+/* import React from 'react';
 import { Container } from 'react-bootstrap';
 
 const SettingsPage = () => {
@@ -10,4 +10,4 @@ const SettingsPage = () => {
   );
 };
 
-export default SettingsPage;
+export default SettingsPage; */

@@ -274,11 +274,11 @@ exports.updatePreferences = async (req, res) => {
 exports.addToWatchlist = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { movie_id, title } = req.body;
+    const { movie_id, title, poster_path } = req.body; // Adicionado poster_path
 
     // Check if already in watchlist
     const [existing] = await db.query(
-      'SELECT id FROM watchlist WHERE user_id = ? AND movie_id = ?',
+      'SELECT id FROM watchlists WHERE user_id = ? AND movie_id = ?',
       [userId, movie_id]
     );
 
@@ -290,8 +290,8 @@ exports.addToWatchlist = async (req, res) => {
     }
 
     await db.query(
-      'INSERT INTO watchlist (user_id, movie_id, title) VALUES (?, ?, ?)',
-      [userId, movie_id, title]
+      'INSERT INTO watchlists (user_id, movie_id, title, poster_path) VALUES (?, ?, ?, ?)',
+      [userId, movie_id, title, poster_path]
     );
 
     res.status(201).json({
@@ -309,11 +309,12 @@ exports.addToWatchlist = async (req, res) => {
   }
 };
 
+
 exports.getWatchlist = async (req, res) => {
   try {
     const userId = req.params.id;
     const [watchlist] = await db.query(
-      'SELECT movie_id, title FROM watchlist WHERE user_id = ?',
+      'SELECT movie_id, title, poster_path FROM watchlists WHERE user_id = ?',
       [userId]
     );
 
@@ -337,7 +338,7 @@ exports.removeFromWatchlist = async (req, res) => {
     const { id, movieId } = req.params;
 
     await db.query(
-      'DELETE FROM watchlist WHERE user_id = ? AND movie_id = ?',
+      'DELETE FROM watchlists WHERE user_id = ? AND movie_id = ?',
       [id, movieId]
     );
 
@@ -394,14 +395,8 @@ exports.deleteUser = async (req, res) => {
 };
 exports.updateAvatar = async (req, res) => {
   try {
-    // Verificar se o ID do token corresponde ao ID da rota
-    if (req.userId !== req.params.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Não autorizado - Você só pode atualizar seu próprio perfil'
-      });
-    }
-
+    const userId = req.params.id;
+    
     // Verificar se o arquivo foi enviado
     if (!req.file) {
       return res.status(400).json({
@@ -410,45 +405,61 @@ exports.updateAvatar = async (req, res) => {
       });
     }
 
-    // Obter usuário atual para deletar a imagem antiga se existir
-    const user = await User.findByPk(req.params.id);
-    if (user.avatar && user.avatar !== 'https://via.placeholder.com/150') {
-      const oldAvatarPath = path.join(__dirname, '../public', user.avatar);
-      if (fs.existsSync(oldAvatarPath)) {
-        fs.unlinkSync(oldAvatarPath);
+    // Caminho relativo e completo para o avatar
+    const relativePath = '/uploads/avatars/' + req.file.filename;
+    const fullPath = path.join(__dirname, '../../public', relativePath);
+
+    // Renomear o arquivo temporário para o destino final
+    fs.renameSync(req.file.path, fullPath);
+
+    // Obter avatar antigo do user_profiles
+    const [profile] = await db.query(
+      'SELECT avatar FROM user_profiles WHERE user_id = ?',
+      [userId]
+    );
+
+    // Remover arquivo antigo se existir
+    if (profile.length && profile[0].avatar) {
+      const oldPath = path.join(__dirname, '../../public', profile[0].avatar);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
       }
     }
 
-    // Atualizar avatar no banco de dados
-    const avatarPath = '/uploads/avatars/' + req.file.filename;
-    const [updated] = await User.update(
-      { avatar: avatarPath },
-      { where: { id: req.params.id } }
-    );
-
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuário não encontrado'
-      });
+    // Atualizar ou inserir no user_profiles
+    if (profile.length) {
+      await db.query(
+        'UPDATE user_profiles SET avatar = ? WHERE user_id = ?',
+        [relativePath, userId]
+      );
+    } else {
+      await db.query(
+        'INSERT INTO user_profiles (user_id, avatar) VALUES (?, ?)',
+        [userId, relativePath]
+      );
     }
 
-    // Retornar o usuário atualizado
-    const updatedUser = await User.findByPk(req.params.id, {
-      attributes: { exclude: ['password'] }
-    });
+    // URL completa para o frontend
+    const avatarUrl = `${req.protocol}://${req.get('host')}${relativePath}`;
 
     res.json({
       success: true,
       message: 'Avatar atualizado com sucesso',
-      user: updatedUser
+      avatar: avatarUrl
     });
 
   } catch (error) {
     console.error('Erro ao atualizar avatar:', error);
+    
+    // Remover arquivo temporário em caso de erro
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro ao atualizar avatar'
+      message: 'Erro ao atualizar avatar',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

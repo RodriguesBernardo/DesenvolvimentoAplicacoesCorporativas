@@ -1,65 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Alert, Spinner } from 'react-bootstrap';
-import { useAuth } from '../hooks/useAuth';
-import { getWatchlist, removeFromWatchlist } from '../services/api';
+import React, { useEffect, useState } from 'react';
+import { Container, Row, Col, Spinner, Alert, Button } from 'react-bootstrap';
+import { API } from '../services/api';
 import MovieCard from '../components/MovieCard';
+import SeriesCard from '../components/SeriesCard'; // Importe o SeriesCard se tiver séries na lista
+import { useAuth } from '../hooks/useAuth';
 
 const Watchlist = () => {
-  const { user } = useAuth();
-  const [movies, setMovies] = useState([]);
+  const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchWatchlist = async () => {
       try {
-        const data = await getWatchlist(user.id);
-        setMovies(data);
+        setLoading(true);
+        setError(null);
+        
+        // Certifique-se que esta função está implementada em services/api.js
+        const response = await API.getUserWatchlist(user.id);
+        
+        // Verifica se a resposta existe e é um array
+        if (!Array.isArray(response)) {
+          throw new Error('Formato de dados inválido');
+        }
+        
+        setWatchlist(response);
       } catch (err) {
-        setError('Erro ao carregar watchlist');
+        console.error('Erro ao carregar watchlist:', err);
+        setError(err.message || 'Erro ao carregar sua lista');
       } finally {
         setLoading(false);
       }
     };
-    fetchWatchlist();
-  }, [user.id]);
 
-  const handleRemove = async (movieId) => {
-    try {
-      await removeFromWatchlist(user.id, movieId);
-      setMovies(movies.filter(movie => movie.id !== movieId));
-    } catch (err) {
-      setError('Erro ao remover filme');
+    if (user?.id) {
+      fetchWatchlist();
+    } else {
+      setLoading(false);
     }
-  };
+  }, [user]);
 
-  if (loading) return <Spinner animation="border" className="d-block mx-auto my-5" />;
-  if (error) return <Alert variant="danger" className="m-4">{error}</Alert>;
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <Spinner animation="border" variant="primary" />
+        <span className="ms-2">Carregando sua lista...</span>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="my-5">
+        <Alert variant="danger" className="text-center py-4">
+          <h4>{error}</h4>
+          <Button 
+            variant="outline-danger" 
+            className="mt-3"
+            onClick={() => window.location.reload()}
+          >
+            Tentar novamente
+          </Button>
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
-    <Container className="py-4">
+    <Container className="py-5 mt-4">
       <h2 className="mb-4">Minha Watchlist</h2>
       
-      {movies.length === 0 ? (
-        <Alert variant="info">Sua watchlist está vazia</Alert>
+      {watchlist.length === 0 ? (
+        <Alert variant="info" className="text-center py-4">
+          <h4>Sua watchlist está vazia</h4>
+          <p>Adicione filmes ou séries para vê-los aqui!</p>
+        </Alert>
       ) : (
-        <Row xs={1} sm={2} md={3} lg={4} className="g-4">
-          {movies.map(movie => (
-            <Col key={movie.id}>
-              <Card className="h-100">
-                <MovieCard movie={movie} />
-                <Button 
-                  variant="danger" 
-                  size="sm" 
-                  className="m-2"
-                  onClick={() => handleRemove(movie.id)}
-                >
-                  Remover
-                </Button>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        <>
+          <div className="mb-4">
+            <h5>Total: {watchlist.length} {watchlist.length === 1 ? 'item' : 'itens'}</h5>
+          </div>
+          
+          <Row className="g-4">
+            {watchlist.map((item) => (
+              <Col key={item.id} xs={6} md={4} lg={3} xl={2}>
+                {/* Renderiza MovieCard ou SeriesCard dependendo do tipo */}
+                {item.mediaType === 'tv' ? (
+                  <SeriesCard series={item} />
+                ) : (
+                  <MovieCard movie={item} />
+                )}
+              </Col>
+            ))}
+          </Row>
+        </>
       )}
     </Container>
   );

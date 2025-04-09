@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Tabs, Tab, Spinner } from 'react-bootstrap';
-import { getMoviesByGenre, getGenres } from '../services/api';
+import { API } from '../services/api';  // Importe o objeto API
 import MovieCard from '../components/MovieCard';
 
 const MoviesPage = () => {
@@ -14,8 +14,8 @@ const MoviesPage = () => {
       try {
         setLoading(true);
         const [genresData, moviesData] = await Promise.all([
-          getGenres(),
-          getMoviesByGenre(activeGenre)
+          API.getGenres(),                     // Chamada usando API.
+          API.getMoviesByGenre(activeGenre)    // Chamada usando API.
         ]);
         setGenres(genresData);
         setMovies(moviesData);

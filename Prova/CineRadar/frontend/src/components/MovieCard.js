@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 const MovieCard = ({ movie }) => {
   return (
     <Card className="h-100 shadow-sm border-0 hover-effect position-relative">
-      {/* Link wrapper for the entire card */}
       <Link 
         to={`/movie/${movie.id}`} 
         className="text-decoration-none text-reset"
@@ -42,25 +41,6 @@ const MovieCard = ({ movie }) => {
           </div>
         </Card.Body>
       </Link>
-
-      {/* Add to list button (positioned absolutely to stay clickable) */}
-      <OverlayTrigger
-        placement="top"
-        overlay={<Tooltip>Adicionar à minha lista</Tooltip>}
-      >
-        <Button
-          variant="outline-primary"
-          size="sm"
-          className="position-absolute bottom-0 end-0 m-2 rounded-circle p-2"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Handle add to list functionality here
-          }}
-        >
-          <PlusCircle size={16} />
-        </Button>
-      </OverlayTrigger>
     </Card>
   );
 };

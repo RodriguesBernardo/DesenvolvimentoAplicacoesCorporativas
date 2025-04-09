@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, Card, Container } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/api';
+import { API } from '../services/api';  // Importe o objeto API
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -23,7 +23,8 @@ const Register = () => {
     setError('');
 
     try {
-      await register({ name, email, password });
+      // Alterado para usar API.auth.register()
+      await API.auth.register({ name, email, password });
       navigate('/login', { state: { success: 'Cadastro realizado! Faça login.' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Falha no cadastro. Tente novamente.');
