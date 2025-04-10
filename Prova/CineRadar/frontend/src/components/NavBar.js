@@ -123,6 +123,7 @@ const CineNavbar = () => {
                 className="text-white d-flex align-items-center me-3"
                 style={{ fontWeight: 500 }}
               >
+                Watchlist
               </Nav.Link>
             </Nav>
 

@@ -6,8 +6,7 @@ import {
 } from 'react-bootstrap';
 import { 
   StarFill, Clock, Calendar, PlayFill, Share, 
-  People, Film, Award, InfoCircle, ChevronDown, ChevronUp,
-  Heart, HeartFill
+  People, Film, Award, InfoCircle, ChevronDown, ChevronUp
 } from 'react-bootstrap-icons';
 import { API } from '../services/api';
 import MovieCard from '../components/MovieCard';
@@ -23,14 +22,9 @@ const MovieDetail = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
   const [showTrailerModal, setShowTrailerModal] = useState(false);
-  const [watchlistStatus, setWatchlistStatus] = useState({
-    loading: false,
-    success: false,
-    error: null
-  });
-  const [isFavorite, setIsFavorite] = useState(false);
   const [selectedTrailer, setSelectedTrailer] = useState(null);
   const [expandedOverview, setExpandedOverview] = useState(false);
+
   const TrailerButton = () => (
     <Button 
       variant="danger" 
@@ -71,12 +65,12 @@ const MovieDetail = () => {
         setSimilar(similarMovies || []);
         setCredits(movieCredits || { cast: [], crew: [] });
         
-        const filteredVideos = movieVideos?.results?.filter(v => 
+        const filteredVideos = movieVideos?.filter(v => 
           v.site === 'YouTube' || v.site === 'Vimeo'
         ) || [];
         
         setVideos(filteredVideos);
-        setProviders(watchProviders?.results?.BR || null);
+        setProviders(watchProviders?.BR || null);
         findBestTrailer(filteredVideos);
         
       } catch (err) {
@@ -121,52 +115,6 @@ const MovieDetail = () => {
     setSelectedTrailer(officialPt || officialEn || anyTrailer || teaser || videos[0]);
   };
 
-  const handleAddToWatchlist = async () => {
-    try {
-      setWatchlistStatus({ loading: true, success: false, error: null });
-  
-      const token = localStorage.getItem('token');
-  
-      if (!token) {
-        throw new Error('Você precisa estar logado para esta ação');
-      }
-  
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          movieId: movie.id,
-          title: movie.title,
-          posterPath: movie.poster_path
-        })
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao adicionar à watchlist');
-      }
-  
-      setWatchlistStatus({ loading: false, success: true, error: null });
-      setIsFavorite(true);
-  
-      setTimeout(() => {
-        setWatchlistStatus(prev => ({ ...prev, success: false }));
-      }, 3000);
-  
-    } catch (err) {
-      console.error('Watchlist error:', err);
-      setWatchlistStatus({ 
-        loading: false, 
-        success: false, 
-        error: err.message || 'Erro inesperado' 
-      });
-    }
-  };
-  
   const formatMoney = (amount) => {
     return amount ? `$${amount.toLocaleString()}` : 'Não disponível';
   };
@@ -216,7 +164,7 @@ const MovieDetail = () => {
 
   return (
     <div className="movie-detail-page" style={{ backgroundColor: '#141414', color: '#fff' }}>
-      {/* Hero Section - Atualizado como no SeriesDetail */}
+      {/* Hero Section */}
       <div 
         className="movie-hero position-relative"
         style={{
@@ -300,31 +248,6 @@ const MovieDetail = () => {
               
               <div className="action-buttons d-flex flex-wrap gap-3 mb-4">
                 {selectedTrailer && <TrailerButton />}
-                
-                <Button 
-                  variant={watchlistStatus.success ? "success" : isFavorite ? "danger" : "outline-light"} 
-                  size="lg"
-                  onClick={handleAddToWatchlist}
-                  disabled={watchlistStatus.loading}
-                  className="d-flex align-items-center"
-                  style={{
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  {watchlistStatus.loading ? (
-                    <Spinner size="sm" animation="border" />
-                  ) : (
-                    <>
-                      {watchlistStatus.success || isFavorite ? (
-                        <HeartFill className="me-2" />
-                      ) : (
-                        <Heart className="me-2" />
-                      )}
-                      {watchlistStatus.success ? "Adicionado!" : isFavorite ? "Favorito" : "Favoritar"}
-                    </>
-                  )}
-                </Button>
               </div>
             </Col>
           </Row>

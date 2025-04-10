@@ -5,12 +5,11 @@ import {
   Spinner, Alert, ListGroup, Modal, OverlayTrigger, Tooltip, Collapse
 } from 'react-bootstrap';
 import { 
-  StarFill, Clock, Calendar, PlayFill, Share, 
-  People, Film, Award, InfoCircle, ChevronDown, ChevronUp,
-  Heart, HeartFill, Tv
+  StarFill, Clock, Calendar, PlayFill, Tv,
+  People, Film, Award, InfoCircle, ChevronDown, ChevronUp
 } from 'react-bootstrap-icons';
 import { API } from '../services/api';
-import SeriesCard from '../components/SeriesCard'; // Alterado para SeriesCard
+import SeriesCard from '../components/SeriesCard';
 
 const SerieDetail = () => {
   const { id } = useParams();
@@ -23,12 +22,6 @@ const SerieDetail = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
   const [showTrailerModal, setShowTrailerModal] = useState(false);
-  const [watchlistStatus, setWatchlistStatus] = useState({
-    loading: false,
-    success: false,
-    error: null
-  });
-  const [isFavorite, setIsFavorite] = useState(false);
   const [selectedTrailer, setSelectedTrailer] = useState(null);
   const [expandedOverview, setExpandedOverview] = useState(false);
   const [seasons, setSeasons] = useState([]);
@@ -50,7 +43,6 @@ const SerieDetail = () => {
       <PlayFill className="me-2" /> Assistir Trailer
     </Button>
   );
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,12 +67,12 @@ const SerieDetail = () => {
         setCredits(serieCredits || { cast: [], crew: [] });
         setSeasons(details.seasons || []);
         
-        const filteredVideos = serieVideos?.results?.filter(v => 
+        const filteredVideos = serieVideos?.filter(v => 
           v.site === 'YouTube' || v.site === 'Vimeo'
         ) || [];
         
         setVideos(filteredVideos);
-        setProviders(watchProviders?.results?.BR || null);
+        setProviders(watchProviders?.BR || null);
         findBestTrailer(filteredVideos);
         
       } catch (err) {
@@ -125,55 +117,6 @@ const SerieDetail = () => {
     setSelectedTrailer(officialPt || officialEn || anyTrailer || teaser || videos[0]);
   };
 
-  const handleAddToWatchlist = async () => {
-    try {
-      setWatchlistStatus({ loading: true, success: false, error: null });
-      
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-  
-      if (!token || !userId) {
-        throw new Error('Você precisa estar logado para esta ação');
-      }
-  
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/watchlist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          userId,
-          serieId: serie.id,  // Mudar de movieId para serieId
-          serieTitle: serie.name,  // Mudar de movieTitle para serieTitle
-          seriePoster: serie.poster_path,  // Mudar de moviePoster para seriePoster
-          serieYear: serie.first_air_date?.substring(0, 4)  // Mudar de movieYear para serieYear
-        })
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(data.message || 'Erro ao adicionar à lista');
-      }
-  
-      setWatchlistStatus({ loading: false, success: true, error: null });
-      setIsFavorite(true);
-      
-      setTimeout(() => {
-        setWatchlistStatus(prev => ({ ...prev, success: false }));
-      }, 3000);
-  
-    } catch (err) {
-      console.error('Watchlist error:', err);
-      setWatchlistStatus({ 
-        loading: false, 
-        success: false, 
-        error: err.message 
-      });
-    }
-  };
-
   const formatRuntime = (minutes) => {
     if (!minutes) return 'N/A';
     const hours = Math.floor(minutes / 60);
@@ -182,7 +125,7 @@ const SerieDetail = () => {
   };
 
   const getCreator = () => {
-    return credits.crew?.find(person => person.job === 'Director')?.name || 'Desconhecido';
+    return credits.crew?.find(person => person.job === 'Creator')?.name || 'Desconhecido';
   };
 
   const getTopCast = () => {
@@ -219,7 +162,7 @@ const SerieDetail = () => {
 
   return (
     <div className="serie-detail-page" style={{ backgroundColor: '#141414', color: '#fff' }}>
-      {/* Hero Section - Melhorado */}
+      {/* Hero Section */}
       <div 
         className="serie-hero position-relative"
         style={{
@@ -273,67 +216,36 @@ const SerieDetail = () => {
             
             <Col lg={8} className="text-white hero-content">
               <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
-                <h1 className="serie-title" style={{ 
-                  fontSize: '3rem',
-                  fontWeight: '700',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-                }}>
-                  {serie.name}
-                </h1>
+                <h1 className="serie-title">{serie.name}</h1>
                 {serie.adult && (
-                  <Badge bg="danger" className="age-rating" pill>
+                  <Badge bg="danger" className="age-rating">
                     18+
                   </Badge>
                 )}
               </div>
               
               <div className="d-flex flex-wrap gap-2 mb-4">
-                <Badge bg="dark" className="d-flex align-items-center" pill>
+                <Badge bg="dark" className="d-flex align-items-center">
                   <Calendar className="me-1" /> {serie.first_air_date.substring(0, 4)}
                 </Badge>
-                <Badge bg="dark" className="d-flex align-items-center" pill>
+                <Badge bg="dark" className="d-flex align-items-center">
                   <Tv className="me-1" /> {serie.number_of_seasons} temporada{serie.number_of_seasons !== 1 ? 's' : ''}
                 </Badge>
                 {serie.genres.map(genre => (
-                  <Badge key={genre.id} bg="primary" pill>
+                  <Badge key={genre.id} bg="primary">
                     {genre.name}
                   </Badge>
                 ))}
               </div>
               
               {serie.tagline && (
-                <p className="serie-tagline fs-5 fst-italic text-light mb-4">
+                <p className="serie-tagline fs-5 fst-italic text-muted">
                   "{serie.tagline}"
                 </p>
               )}
               
               <div className="action-buttons d-flex flex-wrap gap-3 mb-4">
                 {selectedTrailer && <TrailerButton />}
-                
-                <Button 
-                  variant={watchlistStatus.success ? "success" : isFavorite ? "danger" : "outline-light"} 
-                  size="lg"
-                  onClick={handleAddToWatchlist}
-                  disabled={watchlistStatus.loading}
-                  className="d-flex align-items-center"
-                  style={{
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  {watchlistStatus.loading ? (
-                    <Spinner size="sm" animation="border" />
-                  ) : (
-                    <>
-                      {watchlistStatus.success || isFavorite ? (
-                        <HeartFill className="me-2" />
-                      ) : (
-                        <Heart className="me-2" />
-                      )}
-                      {watchlistStatus.success ? "Adicionado!" : isFavorite ? "Favorito" : "Favoritar"}
-                    </>
-                  )}
-                </Button>
               </div>
             </Col>
           </Row>
@@ -691,12 +603,12 @@ const SerieDetail = () => {
 
         {/* Séries Similares */}
         {similar.length > 0 && (
-            <div className="mt-5">
-            <h4 className="mb-4" style={{ fontWeight: '600' }}>Séries similares</h4>
+          <div className="mt-5">
+            <h4 className="mb-4">Você também pode gostar</h4>
             <Row className="g-4">
-              {similar.map(similarSerie => (
-                <Col key={similarSerie.id} xs={6} md={4} lg={3} xl={2}>
-                  <SeriesCard series={similarSerie} /> {/* Corrigido para SeriesCard */}
+              {similar.map(serie => (
+                <Col key={serie.id} xs={6} md={4} lg={3} xl={2}>
+                  <SeriesCard series={serie} />
                 </Col>
               ))}
             </Row>
@@ -704,7 +616,7 @@ const SerieDetail = () => {
         )}
       </Container>
 
-      {/* Modal de Trailer - Melhorado */}
+      {/* Trailer Modal */}
       <Modal 
         show={showTrailerModal} 
         onHide={() => setShowTrailerModal(false)}

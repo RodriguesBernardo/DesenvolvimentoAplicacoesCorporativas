@@ -23,37 +23,12 @@ CREATE TABLE watchlists (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE reviews (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  movie_id INT NOT NULL,
-  rating DECIMAL(2,1),
-  comment TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE user_activities (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  action VARCHAR(255),
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
 
 CREATE TABLE user_preferences (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   preferred_genre_ids TEXT, -- pode armazenar IDs como "28,12,18"
   language_preference VARCHAR(10),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE user_stats (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  movies_watched INT DEFAULT 0,
-  reviews_written INT DEFAULT 0,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
