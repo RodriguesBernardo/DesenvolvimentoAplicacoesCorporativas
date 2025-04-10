@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Tabs, Tab, Spinner } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Tabs, Tab, Spinner, Modal } from 'react-bootstrap';
 import { API } from '../services/api';
-import SeriesCard from '../components/SeriesCard'; // Importe o componente correto
+import SeriesCard from '../components/SeriesCard';
 
 const SeriesPage = () => {
   const [genres, setGenres] = useState([]);
   const [series, setSeries] = useState([]);
-  const [activeGenre, setActiveGenre] = useState(10759); // Action & Adventure
+  const [activeGenre, setActiveGenre] = useState(10759);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [trailerKey, setTrailerKey] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,8 +30,17 @@ const SeriesPage = () => {
     fetchData();
   }, [activeGenre]);
 
-  const handleSerieClick = (serieId) => {
-    navigate(`/series/${serieId}`);
+  const handleTrailerClick = async (seriesId) => {
+    try {
+      const videos = await API.getTVSeriesVideos(seriesId);
+      const trailer = videos.find(video => video.type === 'Trailer');
+      if (trailer) {
+        setTrailerKey(trailer.key);
+        setShowTrailer(true);
+      }
+    } catch (error) {
+      console.error("Error fetching trailer:", error);
+    }
   };
 
   return (
@@ -58,13 +67,30 @@ const SeriesPage = () => {
         <Row className="g-4">
           {series.map(serie => (
             <Col key={serie.id} xs={6} md={4} lg={3} xl={2}>
-              <div onClick={() => handleSerieClick(serie.id)} style={{ cursor: 'pointer' }}>
-                <SeriesCard series={serie} /> {/* Use o componente correto aqui */}
-              </div>
+              <SeriesCard 
+                series={serie} 
+                onTrailerClick={handleTrailerClick}
+              />
             </Col>
           ))}
         </Row>
       )}
+
+      <Modal show={showTrailer} onHide={() => setShowTrailer(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Trailer</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="ratio ratio-16x9">
+            <iframe 
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </Modal.Body>
+      </Modal>
     </Container>
   );
 };

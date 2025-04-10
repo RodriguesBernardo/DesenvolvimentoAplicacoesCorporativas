@@ -123,22 +123,6 @@ const CineNavbar = () => {
                 className="text-white d-flex align-items-center me-3"
                 style={{ fontWeight: 500 }}
               >
-                <Bookmark className="me-2" /> Minha Lista
-                {currentUser?.watchlistCount > 0 && (
-                  <Badge 
-                    pill 
-                    bg="danger" 
-                    className="ms-1"
-                    style={{ 
-                      fontSize: '0.65rem',
-                      padding: '3px 6px',
-                      position: 'relative',
-                      top: '-1px'
-                    }}
-                  >
-                    {currentUser.watchlistCount}
-                  </Badge>
-                )}
               </Nav.Link>
             </Nav>
 

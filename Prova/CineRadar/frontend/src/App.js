@@ -20,7 +20,6 @@ const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Watchlist = lazy(() => import('./pages/Watchlist'));
 const MovieDetail = lazy(() => import('./pages/MovieDetail'));
 const SerieDetail = lazy(() => import('./pages/SeriesDetail'));
 const SearchPage = lazy(() => import('./pages/Search'));
@@ -45,7 +44,6 @@ function App() {
                 {/* Rotas protegidas */}
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/watchlist" element={<Watchlist />} />
                 
                 {/* Rotas públicas */}
                 <Route path="/movies" element={<MoviesPage />} />

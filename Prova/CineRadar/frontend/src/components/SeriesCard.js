@@ -4,46 +4,66 @@ import { StarFill, PlayCircle } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-const MovieCard = ({ movie, onTrailerClick }) => {
+const SeriesCard = ({ series, onTrailerClick }) => {
+  if (!series || !series.id) return null;
+
   const handleTrailerClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onTrailerClick) onTrailerClick(movie.id);
+    if (onTrailerClick) onTrailerClick(series.id);
   };
+
+  const {
+    id,
+    poster_path,
+    vote_average,
+    first_air_date,
+    name,
+    original_name,
+    title
+  } = series;
+
+  const displayName = name || original_name || title || 'Série sem título';
 
   return (
     <Card className="h-100 shadow-sm border-0 hover-effect position-relative">
       <Link 
-        to={`/movie/${movie.id}`} 
+        to={`/series/${id}`} 
         className="text-decoration-none text-reset"
         style={{ display: 'block', height: '100%' }}
       >
         <div className="position-relative" style={{ paddingTop: '150%' }}>
           <Card.Img
             variant="top"
-            src={movie.poster_path 
-              ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-              : 'https://via.placeholder.com/500x750?text=No+Poster'}
+            src={
+              poster_path
+                ? `https://image.tmdb.org/t/p/w500${poster_path}`
+                : 'https://via.placeholder.com/500x750?text=Sem+imagem'
+            }
             className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
-            alt={movie.title}
+            alt={displayName}
+            loading="lazy"
           />
-          <Badge bg="dark" className="position-absolute top-0 end-0 m-2">
-            <StarFill className="text-warning me-1" />
-            {movie.vote_average?.toFixed(1) || 'N/A'}
-          </Badge>
+          
+          {vote_average !== undefined && (
+            <Badge bg="dark" className="position-absolute top-0 end-0 m-2">
+              <StarFill className="text-warning me-1" />
+              {vote_average.toFixed(1)}
+            </Badge>
+          )}
         </div>
         
         <Card.Body className="d-flex flex-column">
           <OverlayTrigger
             placement="bottom"
-            overlay={<Tooltip>{movie.title}</Tooltip>}
+            overlay={<Tooltip>{displayName}</Tooltip>}
           >
-            <Card.Title className="fs-6 text-truncate">{movie.title}</Card.Title>
+            <Card.Title className="fs-6 text-truncate">{displayName}</Card.Title>
           </OverlayTrigger>
           
           <div className="d-flex justify-content-between align-items-center mt-auto">
             <small className="text-muted">
-              {movie.release_date?.substring(0, 4) || 'N/A'}
+              {first_air_date?.substring(0, 4) || 'N/A'}
             </small>
             
             <Button 
@@ -62,15 +82,17 @@ const MovieCard = ({ movie, onTrailerClick }) => {
   );
 };
 
-MovieCard.propTypes = {
-  movie: PropTypes.shape({
+SeriesCard.propTypes = {
+  series: PropTypes.shape({
     id: PropTypes.number.isRequired,
-    title: PropTypes.string.isRequired,
+    name: PropTypes.string,
+    original_name: PropTypes.string,
+    title: PropTypes.string,
     poster_path: PropTypes.string,
     vote_average: PropTypes.number,
-    release_date: PropTypes.string,
+    first_air_date: PropTypes.string,
   }).isRequired,
   onTrailerClick: PropTypes.func,
 };
 
-export default MovieCard;
+export default SeriesCard;
