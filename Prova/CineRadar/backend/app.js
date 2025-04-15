@@ -5,15 +5,20 @@ const path = require('path');
 const db = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-
-
 const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // Configuração do CORS
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
+
+app.use('/api', userRoutes);
+
 
 // Middlewares
 app.use(express.json());
@@ -24,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
 
+app.use(express.json());
 
 // Servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));

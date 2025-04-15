@@ -353,11 +353,100 @@ const statsRequests = {
   }
 };
 
+// No seu arquivo api.js, atualize a função checkMovieInWatchlist:
+export const checkMovieInWatchlist = async (movieId) => {
+  try {
+    const response = await axios.get(
+      `${process.env.REACT_APP_API_URL || '/api'}/users/me/watchlist/${movieId}/check`, 
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return { isInWatchlist: false };
+    }
+    throw error;
+  }
+};
+
+
+export const addToWatchlist = async (movieData) => {
+  try {
+    const response = await axios.post(
+      `${process.env.REACT_APP_API_URL || '/api'}/users/me/watchlist`,
+      {
+        media_id: movieData.id,
+        media_type: 'movie',
+        title: movieData.title,
+        poster_path: movieData.poster_path,
+        release_date: movieData.release_date,
+        vote_average: movieData.vote_average
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json' // Adicione isso
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error adding to watchlist:', error);
+    throw error;
+  }
+};
+
+const removeFromWatchlist = async (movieId) => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/users/me/watchlist/${movieId}`,
+      {
+        headers: { 
+          Authorization: `Bearer ${localStorage.getItem('token')}` 
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao remover da watchlist:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const getUserWatchlist = async () => {
+  try {
+    const response = await axios.get(
+      `${process.env.REACT_APP_API_URL || '/api'}/users/me/watchlist`,
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    
+    // Garanta que a resposta seja um array
+    if (!Array.isArray(response.data.data)) {
+      return [];
+    }
+    
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching watchlist:', error);
+    return []; // Sempre retorne array mesmo com erro
+  }
+};
+
 // Exportação unificada
 export const API = {
   ...tmdbRequests,
   auth: authRequests,
   user: userRequests,
-  watchlist: watchlistRequests,
-  stats: statsRequests
+  stats: statsRequests,
+  checkMovieInWatchlist,
+  addToWatchlist,
+  removeFromWatchlist
 };

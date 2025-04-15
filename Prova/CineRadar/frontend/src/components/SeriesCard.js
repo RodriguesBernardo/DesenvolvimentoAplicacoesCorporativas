@@ -60,22 +60,6 @@ const SeriesCard = ({ series, onTrailerClick }) => {
           >
             <Card.Title className="fs-6 text-truncate">{displayName}</Card.Title>
           </OverlayTrigger>
-          
-          <div className="d-flex justify-content-between align-items-center mt-auto">
-            <small className="text-muted">
-              {first_air_date?.substring(0, 4) || 'N/A'}
-            </small>
-            
-            <Button 
-              variant="outline-primary" 
-              size="sm" 
-              onClick={handleTrailerClick}
-              className="ms-2"
-            >
-              <PlayCircle size={16} className="me-1" />
-              Trailer
-            </Button>
-          </div>
         </Card.Body>
       </Link>
     </Card>

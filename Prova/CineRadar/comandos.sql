@@ -16,13 +16,13 @@ CREATE TABLE genres (
 CREATE TABLE watchlists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  movie_id INT NOT NULL,
-  title VARCHAR(255) NOT NULL,
+  media_id INT NOT NULL,
+  media_type ENUM('movie', 'tv') NOT NULL,
   poster_path VARCHAR(255),
   added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_user_media (user_id, media_id, media_type)
 );
-
 
 CREATE TABLE user_preferences (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -46,5 +46,22 @@ CREATE TABLE movie_genres (
   genre_id INT NOT NULL,
   PRIMARY KEY (movie_id, genre_id),
   FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+  FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+);
+
+CREATE TABLE series (
+  id INT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  poster_path VARCHAR(255),
+  first_air_date DATE,
+  vote_average DECIMAL(3,1),
+  overview TEXT
+);
+
+CREATE TABLE series_genres (
+  series_id INT NOT NULL,
+  genre_id INT NOT NULL,
+  PRIMARY KEY (series_id, genre_id),
+  FOREIGN KEY (series_id) REFERENCES series(id) ON DELETE CASCADE,
   FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 );

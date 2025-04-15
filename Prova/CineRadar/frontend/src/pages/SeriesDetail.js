@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Container, Row, Col, Card, Button, Badge, Tab, Tabs, 
-  Spinner, Alert, ListGroup, Modal, OverlayTrigger, Tooltip, Collapse
+  Spinner, Alert, ListGroup, Modal, OverlayTrigger, Tooltip, Collapse,
+  Toast
 } from 'react-bootstrap';
 import { 
   StarFill, Clock, Calendar, PlayFill, Tv,
@@ -25,6 +26,9 @@ const SerieDetail = () => {
   const [selectedTrailer, setSelectedTrailer] = useState(null);
   const [expandedOverview, setExpandedOverview] = useState(false);
   const [seasons, setSeasons] = useState([]);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const TrailerButton = () => (
     <Button 
@@ -85,6 +89,54 @@ const SerieDetail = () => {
     
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    const checkWatchlistStatus = async () => {
+      if (!serie?.id) return;
+      
+      try {
+        const response = await API.checkSerieInWatchlist(serie.id);
+        setInWatchlist(response.isInWatchlist);
+      } catch (error) {
+        console.error('Error checking watchlist:', error);
+        setInWatchlist(false);
+        if (error.response?.status !== 401) {
+          showToastMessage('Erro temporário ao verificar watchlist');
+        }
+      }
+    };
+
+    checkWatchlistStatus();
+  }, [serie]);
+
+  const showToastMessage = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const toggleWatchlist = async () => {
+    try {
+      if (inWatchlist) {
+        await API.removeFromWatchlist(serie.id);
+        showToastMessage('Removido da watchlist');
+      } else {
+        await API.addToWatchlist({
+          id: serie.id,
+          title: serie.name,
+          poster_path: serie.poster_path,
+          release_date: serie.first_air_date,
+          vote_average: serie.vote_average,
+          isSerie: true
+        });
+        showToastMessage('Adicionado à watchlist');
+      }
+      setInWatchlist(!inWatchlist);
+    } catch (error) {
+      console.error('Error updating watchlist:', error);
+      showToastMessage(error.response?.data?.error || 'Erro ao atualizar watchlist');
+    }
+  };
 
   const findBestTrailer = (videos) => {
     if (!videos || videos.length === 0) {
@@ -246,6 +298,20 @@ const SerieDetail = () => {
               
               <div className="action-buttons d-flex flex-wrap gap-3 mb-4">
                 {selectedTrailer && <TrailerButton />}
+                <Button 
+                  variant={inWatchlist ? "outline-light" : "primary"} 
+                  size="lg"
+                  onClick={toggleWatchlist}
+                  className="watchlist-button"
+                  style={{
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s',
+                    boxShadow: inWatchlist ? 'none' : '0 4px 8px rgba(13, 110, 253, 0.3)'
+                  }}
+                >
+                  <StarFill className="me-2" /> 
+                  {inWatchlist ? 'Na Sua Watchlist' : 'Adicionar à Watchlist'}
+                </Button>
               </div>
             </Col>
           </Row>
@@ -659,6 +725,20 @@ const SerieDetail = () => {
           )}
         </Modal.Body>
       </Modal>
+
+      {/* Toast Notification */}
+      <Toast 
+        show={showToast} 
+        onClose={() => setShowToast(false)}
+        delay={3000} 
+        autohide
+        className="position-fixed bottom-0 end-0 m-3"
+      >
+        <Toast.Header className="bg-dark text-white">
+          <strong className="me-auto">Watchlist</strong>
+        </Toast.Header>
+        <Toast.Body className="bg-light">{toastMessage}</Toast.Body>
+      </Toast>
     </div>
   );
 };

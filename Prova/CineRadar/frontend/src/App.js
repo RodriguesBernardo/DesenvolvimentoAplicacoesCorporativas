@@ -26,6 +26,7 @@ const SearchPage = lazy(() => import('./pages/Search'));
 const MoviesPage = lazy(() => import('./pages/Movies'));
 const SeriesPage = lazy(() => import('./pages/Series'));
 const SettingsPage = lazy(() => import('./pages/Settings'));
+const WatchlistPage = lazy(() => import('./pages/Watchlist'));
 
 function App() {
   return (
@@ -44,6 +45,8 @@ function App() {
                 {/* Rotas protegidas */}
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/watchlist" element={<WatchlistPage />} />
+
                 
                 {/* Rotas públicas */}
                 <Route path="/movies" element={<MoviesPage />} />

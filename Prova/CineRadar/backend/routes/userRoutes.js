@@ -7,10 +7,13 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+
+router.use(express.json()); // Para parsear application/json
+router.use(express.urlencoded({ extended: true })); // Para parsear form data
+
 // Configuração do upload de avatar
 const storageDir = path.join(__dirname, '../public/uploads/avatars');
 
-// Verifica e cria o diretório se não existir
 if (!fs.existsSync(storageDir)) {
   fs.mkdirSync(storageDir, { recursive: true });
 }
@@ -31,6 +34,31 @@ const upload = multer({
   }
 });
 
+// Middleware para tratamento de parâmetros
+router.param(['id', 'mediaId'], (req, res, next, value) => {
+  if (isNaN(parseInt(value))) {
+    return res.status(400).json({ error: 'ID deve ser um número válido' });
+  }
+  next();
+});
+
+router.param('userId', (req, res, next, userId) => {
+  if (userId === 'me') {
+    req.params.userId = req.user.id;
+  } else if (isNaN(parseInt(userId))) {
+    return res.status(400).json({ error: 'ID de usuário inválido' });
+  }
+  next();
+});
+
+// Middleware para verificar se o usuário é o dono do recurso
+const checkUserOwnership = (req, res, next) => {
+  if (req.user.id !== parseInt(req.params.id)) {
+    return res.status(403).json({ error: 'Acesso não autorizado' });
+  }
+  next();
+};
+
 // Função para processar upload de avatar
 async function handleAvatarUpload(req, res) {
   try {
@@ -43,10 +71,8 @@ async function handleAvatarUpload(req, res) {
     const relativePath = `/uploads/avatars/${filename}`;
     const fullPath = path.join(storageDir, filename);
 
-    // Move o arquivo
     fs.renameSync(req.file.path, fullPath);
 
-    // Atualiza o avatar no banco de dados
     await db.query(
       'UPDATE users SET avatar = ? WHERE id = ?',
       [relativePath, userId]
@@ -60,7 +86,6 @@ async function handleAvatarUpload(req, res) {
   } catch (err) {
     console.error('Erro no upload do avatar:', err);
     
-    // Limpeza em caso de erro
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -71,16 +96,6 @@ async function handleAvatarUpload(req, res) {
     });
   }
 }
-
-// Middleware para verificar se o usuário é o dono do recurso
-const checkUserOwnership = (req, res, next) => {
-  if (req.user.id !== parseInt(req.params.id)) {
-    return res.status(403).json({ error: 'Acesso não autorizado' });
-  }
-  next();
-};
-
-// Rotas de usuário
 
 // Obter perfil do usuário
 router.get('/:id', authMiddleware, async (req, res) => {
@@ -97,7 +112,6 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    // Formata a URL do avatar se existir
     const userData = {
       ...user[0],
       avatar: user[0].avatar 
@@ -108,7 +122,10 @@ router.get('/:id', authMiddleware, async (req, res) => {
     res.json(userData);
   } catch (err) {
     console.error('Erro ao buscar usuário:', err);
-    res.status(500).json({ error: 'Erro ao buscar informações do usuário' });
+    res.status(500).json({ 
+      error: 'Erro ao buscar informações do usuário',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -117,12 +134,10 @@ router.put('/:id/profile', authMiddleware, checkUserOwnership, async (req, res) 
   try {
     const { name, email, bio } = req.body;
     
-    // Validação básica
     if (!name || !email) {
       return res.status(400).json({ error: 'Nome e email são obrigatórios' });
     }
 
-    // Verifica se o email já está em uso por outro usuário
     const [existingUser] = await db.query(
       'SELECT id FROM users WHERE email = ? AND id != ?',
       [email, req.params.id]
@@ -132,13 +147,11 @@ router.put('/:id/profile', authMiddleware, checkUserOwnership, async (req, res) 
       return res.status(400).json({ error: 'Email já está em uso' });
     }
 
-    // Atualiza as informações do usuário
     await db.query(
       'UPDATE users SET name = ?, email = ?, bio = ? WHERE id = ?',
       [name, email, bio || null, req.params.id]
     );
     
-    // Obtém os dados atualizados
     const [updatedUser] = await db.query(
       `SELECT 
         id, name, email, avatar, bio, created_at
@@ -166,7 +179,6 @@ router.put('/:id/password', authMiddleware, checkUserOwnership, async (req, res)
       return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
     }
 
-    // Busca a senha atual do usuário
     const [user] = await db.query(
       'SELECT password FROM users WHERE id = ?',
       [req.params.id]
@@ -176,17 +188,14 @@ router.put('/:id/password', authMiddleware, checkUserOwnership, async (req, res)
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    // Verifica se a senha atual está correta
     const isMatch = await bcrypt.compare(currentPassword, user[0].password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Senha atual incorreta' });
     }
     
-    // Cria o hash da nova senha
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    // Atualiza a senha no banco de dados
     await db.query(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, req.params.id]
@@ -195,7 +204,10 @@ router.put('/:id/password', authMiddleware, checkUserOwnership, async (req, res)
     res.json({ message: 'Senha atualizada com sucesso' });
   } catch (err) {
     console.error('Erro ao atualizar senha:', err);
-    res.status(500).json({ error: 'Erro ao atualizar senha' });
+    res.status(500).json({ 
+      error: 'Erro ao atualizar senha',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -222,40 +234,172 @@ router.get('/:id/avatar', authMiddleware, async (req, res) => {
     res.json({ avatar: avatarUrl });
   } catch (err) {
     console.error('Erro ao buscar avatar:', err);
-    res.status(500).json({ error: 'Erro ao recuperar o avatar' });
+    res.status(500).json({ 
+      error: 'Erro ao recuperar o avatar',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
-// Rotas de watchlist
-router.get('/:id/watchlist', authMiddleware, checkUserOwnership, async (req, res) => {
+// Rotas da Watchlist
+router.get('/users/me/watchlist/:mediaId/check', authMiddleware, async (req, res) => {
   try {
-    const [watchlist] = await db.query(
-      `SELECT 
-        w.movie_id,
-        m.title,
-        m.poster_path,
-        m.release_date,
-        m.vote_average,
-        GROUP_CONCAT(g.name) as genres
-      FROM watchlists w
-      LEFT JOIN movies m ON w.movie_id = m.id
-      LEFT JOIN movie_genres mg ON m.id = mg.movie_id
-      LEFT JOIN genres g ON mg.genre_id = g.id
-      WHERE w.user_id = ?
-      GROUP BY w.movie_id, m.title, m.poster_path, m.release_date, m.vote_average`,
-      [req.params.id]
+    const { mediaId } = req.params;
+    const userId = req.user.id;
+
+    const [result] = await db.query(
+      'SELECT 1 FROM watchlists WHERE user_id = ? AND media_id = ? LIMIT 1',
+      [userId, mediaId]
     );
     
-    // Formata os gêneros como array
-    const formattedWatchlist = watchlist.map(item => ({
+    res.json({ 
+      isInWatchlist: result.length > 0,
+      success: true
+    });
+  } catch (error) {
+    console.error('Erro ao verificar watchlist:', error);
+    res.status(500).json({ 
+      error: 'Erro ao verificar watchlist',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+
+// Remova o checkUserOwnership das rotas de watchlist e mantenha apenas authMiddleware
+router.post('/users/me/watchlist', authMiddleware, async (req, res) => {
+  try {
+    const requiredFields = ['media_id', 'media_type', 'title', 'poster_path'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: 'Dados incompletos',
+        missing: missingFields
+      });
+    }
+
+    const { media_id, media_type, title, poster_path } = req.body;
+
+    // Verifica se já está na watchlist
+    const [existing] = await db.query(
+      'SELECT id FROM watchlists WHERE user_id = ? AND media_id = ? AND media_type = ?',
+      [req.user.id, media_id, media_type]
+    );
+    
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Item já está na watchlist' });
+    }
+    
+    // Adiciona à watchlist
+    await db.query(
+      `INSERT INTO watchlists 
+        (user_id, media_id, media_type, title, poster_path) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [req.user.id, media_id, media_type, title, poster_path]
+    );
+    
+    res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Erro ao adicionar à watchlist:', error);
+    res.status(500).json({ 
+      error: 'Erro ao adicionar à watchlist',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+router.delete('/users/:userId/watchlist/:mediaId', authMiddleware, async (req, res) => {
+  try {
+    const { userId, mediaId } = req.params;
+
+    await db.query(
+      'DELETE FROM watchlists WHERE user_id = ? AND media_id = ?',
+      [userId, mediaId]
+    );
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao remover da watchlist:', error);
+    res.status(500).json({ 
+      error: 'Erro ao remover item da watchlist',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: 'WATCHLIST_REMOVE_ERROR'
+    });
+  }
+});
+
+router.get('/users/:userId/watchlist', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Filmes na watchlist
+    const [movies] = await db.query(
+      `SELECT 
+        w.id as watchlist_id,
+        w.media_id,
+        'movie' as media_type,
+        m.title,
+        w.poster_path,
+        m.release_date,
+        m.vote_average,
+        m.overview,
+        GROUP_CONCAT(g.name) as genres
+      FROM watchlists w
+      LEFT JOIN movies m ON w.media_id = m.id
+      LEFT JOIN movie_genres mg ON m.id = mg.movie_id
+      LEFT JOIN genres g ON mg.genre_id = g.id
+      WHERE w.user_id = ? AND w.media_type = 'movie'
+      GROUP BY w.id, w.media_id, m.title, w.poster_path, m.release_date, m.vote_average, m.overview
+      LIMIT ? OFFSET ?`,
+      [userId, parseInt(limit), parseInt(offset)]
+    );
+
+    // Séries na watchlist (se aplicável)
+    const [series] = await db.query(
+      `SELECT 
+        w.id as watchlist_id,
+        w.media_id,
+        'tv' as media_type,
+        s.title,
+        w.poster_path,
+        s.first_air_date as release_date,
+        s.vote_average,
+        s.overview,
+        GROUP_CONCAT(g.name) as genres
+      FROM watchlists w
+      LEFT JOIN series s ON w.media_id = s.id
+      LEFT JOIN series_genres sg ON s.id = sg.series_id
+      LEFT JOIN genres g ON sg.genre_id = g.id
+      WHERE w.user_id = ? AND w.media_type = 'tv'
+      GROUP BY w.id, w.media_id, s.title, w.poster_path, s.first_air_date, s.vote_average, s.overview
+      LIMIT ? OFFSET ?`,
+      [userId, parseInt(limit), parseInt(offset)]
+    );
+
+    const combinedResults = [...movies, ...series].map(item => ({
       ...item,
       genres: item.genres ? item.genres.split(',') : []
     }));
-    
-    res.json(formattedWatchlist);
-  } catch (err) {
-    console.error('Erro ao buscar watchlist:', err);
-    res.status(500).json({ error: 'Erro ao buscar watchlist' });
+
+    res.json({
+      success: true,
+      data: combinedResults,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: combinedResults.length
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar watchlist:', error);
+    res.status(500).json({ 
+      error: 'Erro ao buscar watchlist',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: 'WATCHLIST_FETCH_ERROR'
+    });
   }
 });
 
@@ -266,7 +410,10 @@ router.get('/genres/list', async (req, res) => {
     res.json(genres);
   } catch (error) {
     console.error('Erro ao buscar gêneros:', error);
-    res.status(500).json({ error: 'Erro ao buscar gêneros' });
+    res.status(500).json({ 
+      error: 'Erro ao buscar gêneros',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -283,7 +430,6 @@ router.get('/:id/preferences', authMiddleware, checkUserOwnership, async (req, r
       language_preference: null 
     };
     
-    // Converte os IDs de gêneros para array
     const genreIds = result.preferred_genre_ids 
       ? result.preferred_genre_ids.split(',').map(id => parseInt(id))
       : [];
@@ -294,7 +440,10 @@ router.get('/:id/preferences', authMiddleware, checkUserOwnership, async (req, r
     });
   } catch (error) {
     console.error('Erro ao buscar preferências:', error);
-    res.status(500).json({ error: 'Erro ao carregar preferências' });
+    res.status(500).json({ 
+      error: 'Erro ao carregar preferências',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -302,7 +451,6 @@ router.put('/:id/preferences', authMiddleware, checkUserOwnership, async (req, r
   try {
     const { genreIds, languagePreference } = req.body;
     
-    // Validação dos gêneros
     if (genreIds && genreIds.length > 0) {
       const [validGenres] = await db.query(
         'SELECT COUNT(*) as count FROM genres WHERE id IN (?)',
@@ -314,10 +462,8 @@ router.put('/:id/preferences', authMiddleware, checkUserOwnership, async (req, r
       }
     }
     
-    // Converte array de IDs para string
     const genreIdsString = genreIds ? genreIds.join(',') : '';
     
-    // Insere ou atualiza as preferências
     await db.query(
       `INSERT INTO user_preferences 
         (user_id, preferred_genre_ids, language_preference) 
@@ -331,7 +477,10 @@ router.put('/:id/preferences', authMiddleware, checkUserOwnership, async (req, r
     res.json({ success: true });
   } catch (error) {
     console.error('Erro ao salvar preferências:', error);
-    res.status(500).json({ error: 'Erro ao salvar preferências' });
+    res.status(500).json({ 
+      error: 'Erro ao salvar preferências',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
