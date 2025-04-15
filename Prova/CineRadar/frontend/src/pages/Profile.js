@@ -22,15 +22,11 @@ import {
 import { 
   GearFill, 
   LockFill, 
-  Film, 
   PersonBadge,
   CameraFill,
   Person,
   Clock,
   CheckCircleFill,
-  StarFill,
-  TrashFill,
-  InfoCircleFill,
   HeartFill,
   Search,
   BookmarkFill,
@@ -41,6 +37,29 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
+
+// Lista de gêneros de filmes
+const movieGenres = [
+  { id: 28, name: 'Ação' },
+  { id: 12, name: 'Aventura' },
+  { id: 16, name: 'Animação' },
+  { id: 35, name: 'Comédia' },
+  { id: 80, name: 'Crime' },
+  { id: 99, name: 'Documentário' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Família' },
+  { id: 14, name: 'Fantasia' },
+  { id: 36, name: 'História' },
+  { id: 27, name: 'Terror' },
+  { id: 10402, name: 'Música' },
+  { id: 9648, name: 'Mistério' },
+  { id: 10749, name: 'Romance' },
+  { id: 878, name: 'Ficção Científica' },
+  { id: 10770, name: 'Cinema TV' },
+  { id: 53, name: 'Thriller' },
+  { id: 10752, name: 'Guerra' },
+  { id: 37, name: 'Faroeste' }
+];
 
 const Profile = () => {
   const { currentUser: user, updateUser } = useAuth();
@@ -63,17 +82,14 @@ const Profile = () => {
     profile: false,
     password: false,
     avatar: false,
-    data: false
+    genres: false
   });
-  const [watchlist, setWatchlist] = useState([]);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   
-  // States for genres feature
-  const [allGenres, setAllGenres] = useState([]);
+  // Estados para gêneros
   const [selectedGenres, setSelectedGenres] = useState([]);
-  const [loadingGenres, setLoadingGenres] = useState(false);
   const [genreFilter, setGenreFilter] = useState('');
 
   // Função para obter headers de autenticação
@@ -86,74 +102,37 @@ const Profile = () => {
     };
   };
 
-  // Load user data and watchlist
-  const loadUserData = useCallback(async () => {
+  // Carrega as preferências do usuário
+  const loadUserPreferences = useCallback(async () => {
     if (!user?.id) return;
     
-    setLoading(prev => ({ ...prev, data: true }));
+    setLoading(prev => ({ ...prev, genres: true }));
     setError('');
     
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/users/${user.id}/watchlist`,
+        `${API_BASE_URL}/users/${user.id}/preferences`,
         getAuthHeaders()
       );
       
-      setWatchlist(response.data || []);
+      if (response.data?.preferences?.genres) {
+        const genreIds = response.data.preferences.genres
+          .split(',')
+          .filter(id => id.trim() !== '')
+          .map(id => parseInt(id.trim()));
+        setSelectedGenres(genreIds);
+      }
     } catch (err) {
-      console.error('Error loading watchlist:', err);
-      setError('Erro ao carregar sua lista de filmes e séries');
+      console.error('Erro ao carregar preferências:', err);
+      if (err.response?.status !== 404) {
+        setError('Erro ao carregar gêneros preferidos');
+      }
     } finally {
-      setLoading(prev => ({ ...prev, data: false }));
+      setLoading(prev => ({ ...prev, genres: false }));
     }
   }, [user?.id]);
 
-  // Load genres and user preferences
-  useEffect(() => {
-    const loadGenresAndPreferences = async () => {
-      if (!user?.id) return;
-      
-      setLoadingGenres(true);
-      setError('');
-      
-      try {
-        // Load all available genres
-        const genresResponse = await axios.get(
-          `${API_BASE_URL}/users/genres/list`,
-          getAuthHeaders()
-        );
-        setAllGenres(genresResponse.data || []);
-        
-        // Load user preferences
-        const preferencesResponse = await axios.get(
-          `${API_BASE_URL}/users/${user.id}/preferences`,
-          getAuthHeaders()
-        );
-        
-        // Process preferred genres
-        const preferredGenres = preferencesResponse.data?.preferred_genre_ids || '';
-        const genreIds = preferredGenres.split(',')
-          .filter(id => id.trim() !== '')
-          .map(id => parseInt(id.trim()));
-        
-        setSelectedGenres(genreIds);
-        
-      } catch (err) {
-        console.error('Error loading genres and preferences:', err);
-        if (err.response?.status === 401) {
-          setError('Sessão expirada. Por favor, faça login novamente.');
-        } else if (err.response?.status !== 404) {
-          setError('Erro ao carregar gêneros e preferências');
-        }
-      } finally {
-        setLoadingGenres(false);
-      }
-    };
-    
-    loadGenresAndPreferences();
-  }, [user?.id]);
-
-  // Initialize form data
+  // Inicializa os dados do formulário
   useEffect(() => {
     if (user) {
       setFormData({
@@ -161,18 +140,27 @@ const Profile = () => {
         email: user.email || '',
         bio: user.bio || ''
       });
-      const avatarUrl = user.avatar?.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}`;
-      setAvatarPreview(avatarUrl || null);
-      loadUserData();
+      
+      // Configura o avatar
+      if (user.avatar) {
+        const avatarUrl = user.avatar.startsWith('http') 
+          ? user.avatar 
+          : `${API_BASE_URL}${user.avatar}`;
+        setAvatarPreview(avatarUrl);
+      } else {
+        setAvatarPreview(null);
+      }
+      
+      loadUserPreferences();
     }
-  }, [user, loadUserData]);
+  }, [user, loadUserPreferences]);
 
-  // Filter genres based on search
-  const filteredGenres = allGenres.filter(genre => 
+  // Filtra gêneros baseado na busca
+  const filteredGenres = movieGenres.filter(genre =>
     genre.name.toLowerCase().includes(genreFilter.toLowerCase())
   );
 
-  // Handle profile form submission
+  // Atualiza perfil
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -181,7 +169,7 @@ const Profile = () => {
   
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/users/${user.id}/profile`,
+        `${API_BASE_URL}/users/${user.id}`,
         {
           name: formData.name,
           email: formData.email,
@@ -201,7 +189,7 @@ const Profile = () => {
     }
   };
 
-  // Handle password change
+  // Altera senha
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -236,7 +224,7 @@ const Profile = () => {
     }
   };
 
-  // Handle avatar change
+  // Manipula alteração de avatar
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -255,7 +243,7 @@ const Profile = () => {
     }
   };
 
-  // Handle avatar upload
+  // Envia novo avatar
   const handleUploadAvatar = async () => {
     if (!selectedFile) {
       return setError('Selecione uma imagem válida');
@@ -268,28 +256,24 @@ const Profile = () => {
     try {
       const formData = new FormData();
       formData.append('avatar', selectedFile);
-  
+
       const config = {
         ...getAuthHeaders(),
         'Content-Type': 'multipart/form-data'
       };
-  
+
       const response = await axios.put(
         `${API_BASE_URL}/users/${user.id}/avatar`,
         formData,
         config
       );
       
-      const avatarUrl = response.data.avatar.startsWith('http') 
-        ? response.data.avatar 
-        : `${API_BASE_URL}${response.data.avatar}`;
-      
       updateUser({ 
         ...user, 
-        avatar: avatarUrl
+        avatar: response.data.avatar
       });
       
-      setAvatarPreview(avatarUrl);
+      setAvatarPreview(response.data.avatar);
       setShowAvatarModal(false);
       setSuccess('Avatar atualizado com sucesso!');
     } catch (err) {
@@ -300,7 +284,7 @@ const Profile = () => {
     }
   };
 
-  // Toggle genre selection
+  // Alterna seleção de gênero
   const handleGenreToggle = (genreId) => {
     setSelectedGenres(prev => 
       prev.includes(genreId)
@@ -309,11 +293,11 @@ const Profile = () => {
     );
   };
 
-  // Save preferred genres
+  // Salva gêneros preferidos
   const savePreferredGenres = async () => {
     if (!user?.id) return;
     
-    setLoadingGenres(true);
+    setLoading(prev => ({ ...prev, genres: true }));
     setError('');
     setSuccess('');
     
@@ -321,7 +305,7 @@ const Profile = () => {
       await axios.put(
         `${API_BASE_URL}/users/${user.id}/preferences`,
         {
-          preferred_genre_ids: selectedGenres.join(',')
+          genres: selectedGenres.join(',')
         },
         getAuthHeaders()
       );
@@ -331,12 +315,12 @@ const Profile = () => {
       console.error('Error saving preferences:', err);
       setError(err.response?.data?.error || 'Erro ao salvar gêneros favoritos');
     } finally {
-      setLoadingGenres(false);
+      setLoading(prev => ({ ...prev, genres: false }));
       setTimeout(() => setSuccess(''), 3000);
     }
   };
 
-  // Render avatar component
+  // Renderiza avatar
   const renderAvatar = () => {
     if (avatarPreview) {
       return (
@@ -390,7 +374,7 @@ const Profile = () => {
 
   return (
     <Container fluid className="px-0 profile-container bg-light">
-      {/* Header with gradient background */}
+      {/* Header com background gradiente */}
       <div className="profile-header" style={{ 
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         height: '300px',
@@ -437,22 +421,17 @@ const Profile = () => {
                   "{user.bio}"
                 </p>
               )}
-              <div className="d-flex gap-3">
-                <Badge bg="light" text="dark" className="d-flex align-items-center py-2 px-3 rounded-pill">
-                  <Film className="me-1" /> {watchlist.length} {watchlist.length === 1 ? 'item' : 'itens'} na lista
-                </Badge>
-                <Badge bg="light" text="dark" className="d-flex align-items-center py-2 px-3 rounded-pill">
-                  <HeartFill className="me-1 text-danger" /> {selectedGenres.length} gêneros favoritos
-                </Badge>
-              </div>
+              <Badge bg="light" text="dark" className="d-flex align-items-center py-2 px-3 rounded-pill">
+                <HeartFill className="me-1 text-danger" /> {selectedGenres.length} gêneros favoritos
+              </Badge>
             </Col>
           </Row>
         </Container>
       </div>
 
-      {/* Main content */}
+      {/* Conteúdo principal */}
       <Container className="py-5 mt-n5" style={{ position: 'relative', zIndex: 1 }}>
-        {/* Floating tabs card */}
+        {/* Card de abas flutuante */}
         <Card className="border-0 shadow-sm mb-4 overflow-hidden">
           <Tabs
             activeKey={activeTab}
@@ -463,7 +442,7 @@ const Profile = () => {
             <Tab eventKey="profile" title={<><GearFill className="me-2" /> Perfil</>}>
               <Row className="g-4 mt-2">
                 <Col lg={8}>
-                  {/* Profile settings card */}
+                  {/* Card de configurações de perfil */}
                   <Card className="border-0 mb-4">
                     <Card.Body>
                       <h4 className="mb-4 d-flex align-items-center text-primary">
@@ -529,21 +508,19 @@ const Profile = () => {
                     </Card.Body>
                   </Card>
 
-                  {/* Genre selection card - Modern Design */}
+                  {/* Card de seleção de gêneros */}
                   <Card className="border-0 mb-4">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center mb-4">
                         <h4 className="mb-0 d-flex align-items-center text-primary">
-                          <Sliders className="me-2" /> Preferências de Gênero
+                          <Sliders className="me-2" /> Gêneros Preferidos
                         </h4>
-                        {selectedGenres.length > 0 && (
-                          <Badge pill bg="primary" className="px-3 py-2">
-                            {selectedGenres.length} selecionados
-                          </Badge>
-                        )}
+                        <Badge pill bg="primary">
+                          {selectedGenres.length} selecionados
+                        </Badge>
                       </div>
                       
-                      {loadingGenres ? (
+                      {loading.genres ? (
                         <div className="text-center py-4">
                           <Spinner animation="border" variant="primary" />
                           <p className="mt-2">Carregando gêneros...</p>
@@ -586,10 +563,10 @@ const Profile = () => {
                             <Button
                               variant="primary"
                               onClick={savePreferredGenres}
-                              disabled={loadingGenres || selectedGenres.length === 0}
+                              disabled={loading.genres || selectedGenres.length === 0}
                               className="px-4 py-2 rounded-pill"
                             >
-                              {loadingGenres ? (
+                              {loading.genres ? (
                                 <>
                                   <Spinner as="span" size="sm" animation="border" role="status" className="me-2" />
                                   Salvando...
@@ -609,7 +586,7 @@ const Profile = () => {
                 </Col>
                 
                 <Col lg={4}>
-                  {/* Account status card */}
+                  {/* Card de status da conta */}
                   <Card className="border-0 h-100">
                     <Card.Body>
                       <h4 className="mb-4 d-flex align-items-center text-primary">
@@ -628,18 +605,6 @@ const Profile = () => {
                             {selectedGenres.length}
                           </Badge>
                         </ListGroup.Item>
-                        <ListGroup.Item className="d-flex justify-content-between align-items-center py-3">
-                          <span className="fw-medium">Itens na lista</span>
-                          <Badge pill bg="primary">
-                            {watchlist.length}
-                          </Badge>
-                        </ListGroup.Item>
-                        <ListGroup.Item className="d-flex justify-content-between align-items-center py-3">
-                          <span className="fw-medium">Membro desde</span>
-                          <span className="text-muted">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </span>
-                        </ListGroup.Item>
                       </ListGroup>
                     </Card.Body>
                   </Card>
@@ -647,7 +612,7 @@ const Profile = () => {
               </Row>
             </Tab>
 
-            {/* Security tab */}
+            {/* Aba de segurança */}
             <Tab eventKey="security" title={<><LockFill className="me-2" /> Segurança</>}>
               <Row className="g-4 mt-2">
                 <Col lg={8}>
@@ -748,7 +713,7 @@ const Profile = () => {
           </Tabs>
         </Card>
 
-        {/* Error/Success messages */}
+        {/* Mensagens de erro/sucesso */}
         {(error || success) && (
           <Alert 
             variant={error ? 'danger' : 'success'} 
@@ -761,7 +726,7 @@ const Profile = () => {
         )}
       </Container>
 
-      {/* Avatar upload modal */}
+      {/* Modal de upload de avatar */}
       <Modal show={showAvatarModal} onHide={() => setShowAvatarModal(false)} centered>
         <Modal.Header closeButton className="border-0">
           <Modal.Title className="text-primary">Alterar Avatar</Modal.Title>
@@ -833,7 +798,7 @@ const Profile = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Custom CSS */}
+      {/* Estilos CSS */}
       <style>{`
         .profile-container {
           min-height: 100vh;
