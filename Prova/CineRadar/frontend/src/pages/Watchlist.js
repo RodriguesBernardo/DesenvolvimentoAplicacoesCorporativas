@@ -23,6 +23,13 @@ const WatchlistPage = () => {
   const itemsPerPage = 8;
 
   useEffect(() => {
+    // Verifica se o usuário está logado
+    if (!currentUser || !currentUser.id) {
+      setError('Você precisa estar logado para acessar esta página');
+      setLoading(false);
+      return;
+    }
+
     const fetchWatchlist = async () => {
       try {
         setLoading(true);
@@ -46,7 +53,7 @@ const WatchlistPage = () => {
     };
 
     fetchWatchlist();
-  }, [currentUser.id]);
+  }, [currentUser]);
 
   const removeFromWatchlist = async (watchlistId) => {
     try {
@@ -99,13 +106,24 @@ const WatchlistPage = () => {
       <Container className="my-5">
         <Alert variant="danger" className="text-center py-4">
           <h4>{error}</h4>
-          <Button 
-            variant="outline-danger" 
-            onClick={() => window.location.reload()} 
-            className="mt-3"
-          >
-            Tentar novamente
-          </Button>
+          {(!currentUser || !currentUser.id) ? (
+            <Button 
+              as={Link}
+              to="/login"
+              variant="outline-danger" 
+              className="mt-3"
+            >
+              Ir para página de login
+            </Button>
+          ) : (
+            <Button 
+              variant="outline-danger" 
+              onClick={() => window.location.reload()} 
+              className="mt-3"
+            >
+              Tentar novamente
+            </Button>
+          )}
         </Alert>
       </Container>
     );

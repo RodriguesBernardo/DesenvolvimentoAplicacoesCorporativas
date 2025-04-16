@@ -169,7 +169,7 @@ const Profile = () => {
   
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/users/${user.id}`,
+        `${API_BASE_URL}/users/${user.id}/profile`,  // Adicionado /profile
         {
           name: formData.name,
           email: formData.email,
@@ -336,7 +336,6 @@ const Profile = () => {
               border: '3px solid #fff',
               boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
             }}
-            alt="Avatar do usuário"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = '/default-avatar.png';
