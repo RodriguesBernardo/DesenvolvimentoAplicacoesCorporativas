@@ -41,7 +41,6 @@ router.post('/login', async (req, res) => {
       token
     };
     
-    console.log(userData)
     res.json(userData);
 
   } catch (error) {

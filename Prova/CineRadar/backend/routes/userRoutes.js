@@ -242,6 +242,8 @@ router.get('/:id/avatar', authMiddleware, async (req, res) => {
 });
 
 // Rotas da Watchlist
+
+// Lista os filmes e séries que estão na watchlist do usuário 
 router.get('/users/me/watchlist/:mediaId/check', authMiddleware, async (req, res) => {
   try {
     const { mediaId } = req.params;
@@ -309,6 +311,8 @@ router.post('/users/me/watchlist', authMiddleware, async (req, res) => {
   }
 });
 
+
+// Remove um item da watchlist do usuário
 router.delete('/users/:userId/watchlist/:mediaId', authMiddleware, async (req, res) => {
   try {
     const { userId, mediaId } = req.params;
@@ -329,6 +333,8 @@ router.delete('/users/:userId/watchlist/:mediaId', authMiddleware, async (req, r
   }
 });
 
+
+// Lista os filmes e séries que estão na watchlist do usuário
 router.get('/users/:userId/watchlist', authMiddleware, async (req, res) => {
   try {
     const userId = req.params.userId;

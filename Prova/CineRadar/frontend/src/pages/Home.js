@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Container, Row, Col, Carousel, Card, Button, Badge, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { StarFill, Clock, PlusCircle, PlayFill } from 'react-bootstrap-icons';
+import { StarFill, Clock, PlusCircle } from 'react-bootstrap-icons';
 import { API } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -10,14 +10,13 @@ const Home = () => {
   const [actionMovies, setActionMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
+  useEffect(() => {       // Uso de UseEffect para buscar dados dos filmes
     const fetchData = async () => {
       try {
-        const [trendingData, actionData] = await Promise.all([
-          API.getTrendingMovies(),  // Alterado para API.getTrendingMovies()
-          API.getMoviesByGenre(28)  // Alterado para API.getMoviesByGenre()
+        const [trendingData, actionData] = await Promise.all([   //promisse.all para buscar os dados de forma assíncrona
+          API.getTrendingMovies(),      // Busca os filmes em alta pelo TMDB
+          API.getMoviesByGenre(28)      // Busca os filmes do gerero de ação 
         ]);
         setTrending(trendingData);
         setActionMovies(actionData);
@@ -33,7 +32,6 @@ const Home = () => {
   const handleAddToList = (e, movieId) => {
     e.preventDefault();
     e.stopPropagation();
-    // Implement your add to list logic here
     alert(`Filme ${movieId} adicionado à sua lista`);
   };
 
@@ -45,7 +43,6 @@ const Home = () => {
 
   return (
     <Container fluid className="px-4 py-3">
-      {/* Banner Principal */}
       <Carousel fade className="mb-5 shadow-lg rounded">
         {trending.slice(0, 5).map(movie => (
           <Carousel.Item key={movie.id} style={{ height: '60vh' }}>
@@ -92,10 +89,8 @@ const Home = () => {
         ))}
       </Carousel>
 
-      {/* Seção de Filmes em Destaque */}
       <Section title="Em Destaque" movies={trending} />
 
-      {/* Seção de Ação */}
       <Section title="Ação" movies={actionMovies} />
     </Container>
   );

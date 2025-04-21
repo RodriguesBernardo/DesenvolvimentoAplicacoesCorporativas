@@ -1,3 +1,7 @@
+CREATE DATABASE CineRadar;
+
+use CineRadar;
+
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -19,6 +23,7 @@ CREATE TABLE watchlists (
   media_id INT NOT NULL,
   media_type ENUM('movie', 'tv') NOT NULL,
   poster_path VARCHAR(255),
+  title VARCHAR(255) NOT NULL,
   added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   INDEX idx_user_media (user_id, media_id, media_type)
@@ -27,7 +32,7 @@ CREATE TABLE watchlists (
 CREATE TABLE user_preferences (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  preferred_genre_ids TEXT, -- pode armazenar IDs como "28,12,18"
+  preferred_genre_ids TEXT, 
   language_preference VARCHAR(10),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

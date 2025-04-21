@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []);
 
-  // Login - agora usando useCallback para memoização
+  // Login - usando useCallback para memoização
   const login = useCallback(async (email, password) => {
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -58,13 +58,13 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  // Logout - memoizado
+  // Logout 
   const logout = useCallback(() => {
     setCurrentUser(null);
     localStorage.removeItem('cineRadarUser');
   }, []);
 
-  // Verifica autenticação - útil para rotas protegidas
+  // Verifica autenticação
   const isAuthenticated = useCallback(() => {
     return !!currentUser;
   }, [currentUser]);

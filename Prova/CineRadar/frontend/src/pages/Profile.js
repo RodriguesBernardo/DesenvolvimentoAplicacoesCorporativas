@@ -614,72 +614,7 @@ const Profile = () => {
             {/* Aba de segurança */}
             <Tab eventKey="security" title={<><LockFill className="me-2" /> Segurança</>}>
               <Row className="g-4 mt-2">
-                <Col lg={8}>
-                  <Card className="border-0">
-                    <Card.Body>
-                      <h4 className="mb-4 d-flex align-items-center text-primary">
-                        <LockFill className="me-2" /> Alterar Senha
-                      </h4>
 
-                      <Form onSubmit={handlePasswordSubmit}>
-                        <FloatingLabel controlId="floatingCurrentPassword" label="Senha Atual" className="mb-3">
-                          <Form.Control
-                            type="password"
-                            placeholder="Senha Atual"
-                            value={passwordData.currentPassword}
-                            onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                            required
-                            className="border-2"
-                          />
-                        </FloatingLabel>
-                        
-                        <FloatingLabel controlId="floatingNewPassword" label="Nova Senha" className="mb-3">
-                          <Form.Control
-                            type="password"
-                            placeholder="Nova Senha"
-                            value={passwordData.newPassword}
-                            onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                            required
-                            minLength="6"
-                            className="border-2"
-                          />
-                          <Form.Text className="text-muted">
-                            Mínimo 6 caracteres
-                          </Form.Text>
-                        </FloatingLabel>
-                        
-                        <FloatingLabel controlId="floatingConfirmPassword" label="Confirmar Nova Senha" className="mb-4">
-                          <Form.Control
-                            type="password"
-                            placeholder="Confirmar Nova Senha"
-                            value={passwordData.confirmPassword}
-                            onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                            required
-                            minLength="6"
-                            className="border-2"
-                          />
-                        </FloatingLabel>
-                        
-                        <div className="d-flex justify-content-end">
-                          <Button 
-                            variant="primary" 
-                            type="submit" 
-                            disabled={loading.password}
-                            className="px-4 py-2 rounded-pill"
-                          >
-                            {loading.password ? (
-                              <>
-                                <Spinner as="span" size="sm" animation="border" role="status" className="me-2" />
-                                Alterando...
-                              </>
-                            ) : 'Alterar Senha'}
-                          </Button>
-                        </div>
-                      </Form>
-                    </Card.Body>
-                  </Card>
-                </Col>
-                
                 <Col lg={4}>
                   <Card className="border-0 h-100">
                     <Card.Body>

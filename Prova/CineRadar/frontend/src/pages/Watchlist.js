@@ -30,9 +30,11 @@ const WatchlistPage = () => {
       return;
     }
 
+    // Função para buscar a watchlist do usuário
     const fetchWatchlist = async () => {
       try {
         setLoading(true);
+        // Usamos o axios para fazer a requisição à API
         const response = await axios.get(
           `${API_BASE_URL}/users/${currentUser.id}/watchlist`,
           {

@@ -9,6 +9,9 @@ function Login() {
     email: '',
     password: ''
   });
+  
+  // Uso de UseState para gerenciar o estado do formulário
+ 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -26,6 +29,7 @@ function Login() {
     e.preventDefault();
     setError('');
 
+    // Validação para que os campos estejam preenchidos
     if (!formData.email || !formData.password) {
       return setError('Por favor, preencha todos os campos');
     }
@@ -36,7 +40,7 @@ function Login() {
       const { success, error: authError } = await login(formData.email, formData.password);
       
       if (success) {
-        navigate('/');
+        navigate('/');    // Navigate do React-Router para redirecionar para o home
       } else {
         setError(authError || 'Erro ao fazer login');
       }
@@ -185,16 +189,6 @@ function Login() {
                     </>
                   ) : 'Entrar'}
                 </Button>
-              </div>
-
-              <div className="text-center mb-4">
-                <Link 
-                  to="/forgot-password" 
-                  className="text-decoration-none"
-                  style={{ color: '#6c757d', fontWeight: '500' }}
-                >
-                  Esqueceu sua senha?
-                </Link>
               </div>
             </Form>
 

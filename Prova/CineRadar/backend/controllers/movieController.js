@@ -2,6 +2,8 @@
 const axios = require('axios');
 require('dotenv').config();
 
+
+// Função para buscar buscar filmes direto do TMDB 
 exports.getRecommendations = async (req, res) => {
   try {
     const { genres } = req.query;
