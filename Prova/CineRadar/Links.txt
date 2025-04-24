@@ -1,2 +1,2 @@
 - Link do vídeo de apresentação: https://drive.google.com/file/d/19u_7jW7odhDJ2AQ2vXaUcbSCRkB4Pikm/view?usp=sharing
-- Link do repositório do GitHub: 
+- Link do repositório do GitHub: https://github.com/RodriguesBernardo/DesenvolvimentoAplicacoesCorporativas.git
