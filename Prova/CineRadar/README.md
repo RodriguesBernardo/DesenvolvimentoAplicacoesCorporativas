@@ -2,6 +2,11 @@
 
 Este projeto é uma aplicação web completa (front-end + back-end) que permite aos usuários explorar filmes e séries usando a API do TMDB, além de criar uma watchlist pessoal com login seguro e dados persistidos em banco de dados.
 
+## Links 
+- Link do vídeo de apresentação: https://drive.google.com/file/d/19u_7jW7odhDJ2AQ2vXaUcbSCRkB4Pikm/view?usp=sharing
+
+- Link do repositório do GitHub: https://github.com/RodriguesBernardo/DesenvolvimentoAplicacoesCorporativas.git
+
 ## 📌 Funcionalidades
 
 - 🔍 Explorar filmes populares e por gênero (via TMDB API)

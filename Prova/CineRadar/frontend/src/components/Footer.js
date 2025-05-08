@@ -37,7 +37,7 @@ const Footer = () => {
             <h5>Redes Sociais</h5>
             <div className="d-flex gap-3">
               <a 
-                href="https://facebook.com/suapagina" 
+                href="https://facebook.com/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-white"
@@ -46,7 +46,7 @@ const Footer = () => {
                 <Facebook size={20} />
               </a>
               <a 
-                href="https://twitter.com/suapagina" 
+                href="https://twitter.com/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-white"
@@ -55,7 +55,7 @@ const Footer = () => {
                 <Twitter size={20} />
               </a>
               <a 
-                href="https://instagram.com/suapagina" 
+                href="https://instagram.com/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-white"
@@ -64,7 +64,7 @@ const Footer = () => {
                 <Instagram size={20} />
               </a>
               <a 
-                href="https://github.com/seurepositorio" 
+                href="https://github.com/RodriguesBernardo/DesenvolvimentoAplicacoesCorporativas.git" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-white"
